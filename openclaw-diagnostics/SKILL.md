@@ -8,6 +8,7 @@ description: >
   工具执行统计、错误排查、agent 活动分析时触发。
   触发词：诊断、diagnostics、性能分析、推理耗时、token统计、运行状态、
   agent分析、工具调用统计、Run详情、Gateway重启。
+  指令触发：/diag — 直接执行诊断，支持参数透传。
 metadata:
   openclaw:
     tools:
@@ -17,7 +18,30 @@ metadata:
 
 # OpenClaw 诊断工具
 
-运行 `scripts/openclaw-diag.sh` 对 OpenClaw 进行诊断分析。
+## 指令模式
+
+当用户发送 `/diag` 指令时，直接执行脚本，不做额外解释：
+
+| 用户输入 | 执行命令 |
+|----------|----------|
+| `/diag` | `bash scripts/openclaw-diag.sh -s` |
+| `/diag -s` | `bash scripts/openclaw-diag.sh -s` |
+| `/diag -a waicode` | `bash scripts/openclaw-diag.sh -s -a waicode` |
+| `/diag -l 5` | `bash scripts/openclaw-diag.sh -l 5` |
+| `/diag 2026-03-19` | `bash scripts/openclaw-diag.sh -s 2026-03-19` |
+| `/diag -f` | `bash scripts/openclaw-diag.sh -f`（提醒：实时模式，Ctrl+C 退出） |
+| `/diag --errors` | `bash scripts/openclaw-diag.sh`（执行后只提取错误部分汇总） |
+
+规则：
+1. `/diag` 后的参数直接透传给脚本
+2. 无参数时默认 `-s`（摘要模式，最简洁）
+3. 输出结果后做简要中文摘要（关键 KPI + 异常项）
+4. 去除 ANSI 颜色码：管道 `| sed 's/\x1b\[[0-9;]*m//g'`
+
+## 自然语言模式
+
+当用户用自然语言询问（如"运行状态怎么样"、"waicode今天干了啥"）时，
+自行选择合适参数执行脚本，并用中文汇总关键信息。
 
 ## 快速使用
 
