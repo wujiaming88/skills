@@ -55,7 +55,7 @@ find_openclaw_config() {
     local config=""
     for p in \
         "$HOME/.openclaw/openclaw.json" \
-        "/root/.openclaw/openclaw.json" \
+        "$HOME/.openclaw/openclaw.json" \
         "/etc/openclaw/openclaw.json"; do
         if [ -f "$p" ]; then
             config="$p"
@@ -323,8 +323,8 @@ SESSIONS_DIR=""
 for d in \
     "$HOME/.openclaw/agents/main/sessions" \
     "$HOME/.openclaw/agents/*/sessions" \
-    "/root/.openclaw/agents/main/sessions" \
-    "/root/.openclaw/agents/*/sessions"; do
+    "$HOME/.openclaw/agents/main/sessions" \
+    "$HOME/.openclaw/agents/*/sessions"; do
     if [ -d "$d" ] 2>/dev/null; then
         SESSIONS_DIR="$d"
         break
