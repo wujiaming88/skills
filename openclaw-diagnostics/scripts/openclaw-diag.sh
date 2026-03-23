@@ -356,7 +356,8 @@ if [ "$FOLLOW" = true ]; then
     fi
     echo -e "${GRAY}日志文件: $LOG${NC}"
     echo ""
-    AGENT_FILTER_ENV="$AGENT_FILTER" tail -f "$LOG" 2>/dev/null | python3 -c "
+    export AGENT_FILTER_ENV="$AGENT_FILTER"
+    tail -f "$LOG" 2>/dev/null | python3 -c "
 import json, sys, os, re
 from datetime import datetime
 

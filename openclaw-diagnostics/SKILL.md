@@ -148,7 +148,7 @@ bash scripts/openclaw-diag.sh -f --advanced
 
 ## 注意事项
 
-- 脚本依赖 `python3`（3.6+）和 `bash`
+- 脚本依赖 `python3`（3.7+，使用 `datetime.fromisoformat`）和 `bash`
 - 高级模式（`--advanced`）会临时修改 `openclaw.json` 并重启 Gateway，退出时自动恢复
 - 无 Swap 的机器上并发多 Agent 时注意内存
 - 时间戳统一为 UTC 处理，不受本地时区影响
