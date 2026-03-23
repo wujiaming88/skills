@@ -6,6 +6,13 @@ description: >
   软件设计师、网络工程师、信息安全工程师、数据库系统工程师、系统集成项目管理工程师。
   支持按科目、知识领域、时间范围（2009-2025）筛选。支持综合知识、案例分析、论文三科。
   触发词：软考真题、架构师真题、历年真题、刷题、ruankao questions、搜索真题。
+metadata:
+  openclaw:
+    tools:
+      - exec
+      - web_search
+      - web_fetch
+      - read
 ---
 
 # 软考真题搜索
@@ -117,10 +124,7 @@ web_search("{科目} {年份} {科目类型} 真题 {知识点}")
 - 环球网校 hqwx.com — 综合知识题目较全
 - 51CTO题库 t.51cto.com — 在线做题平台
 
-**注意**：CSDN 已全站启用反爬（521），不建议直接 web_fetch。如必须访问，使用 Googlebot UA：
-```bash
-curl -H "User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" "URL"
-```
+**注意**：CSDN 已全站启用反爬（521），不建议直接抓取，跳过 CSDN 源使用其他站点。
 
 ### 第6步：整理输出
 
