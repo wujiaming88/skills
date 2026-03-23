@@ -22,21 +22,24 @@ metadata:
 
 当用户发送 `/diag` 指令时，直接执行脚本，不做额外解释：
 
-| 用户输入 | 执行命令 |
-|----------|----------|
-| `/diag` | `bash scripts/openclaw-diag.sh -s` |
-| `/diag -s` | `bash scripts/openclaw-diag.sh -s` |
-| `/diag -a waicode` | `bash scripts/openclaw-diag.sh -s -a waicode` |
-| `/diag -l 5` | `bash scripts/openclaw-diag.sh -l 5` |
-| `/diag 2026-03-19` | `bash scripts/openclaw-diag.sh -s 2026-03-19` |
-| `/diag -f` | `bash scripts/openclaw-diag.sh -f`（提醒：实时模式，Ctrl+C 退出） |
-| `/diag --errors` | `bash scripts/openclaw-diag.sh`（执行后只提取错误部分汇总） |
+| 用户输入 | 执行命令 | 说明 |
+|----------|----------|------|
+| `/diag` | `-s` | 今日摘要（默认） |
+| `/diag full` | `(无-s)` | 完整报告（含 Run 详情 + 错误列表） |
+| `/diag full -l 3` | `-l 3` | 最近 3 个 Run 完整详情 |
+| `/diag -a waicode` | `-s -a waicode` | 指定 agent 摘要 |
+| `/diag -a main full` | `-a main` | 指定 agent 完整报告 |
+| `/diag 2026-03-19` | `-s 2026-03-19` | 指定日期摘要 |
+| `/diag errors` | `(无-s)` | 执行完整报告，只提取错误部分汇总 |
 
 规则：
-1. `/diag` 后的参数直接透传给脚本
-2. 无参数时默认 `-s`（摘要模式，最简洁）
-3. 输出结果后做简要中文摘要（关键 KPI + 异常项）
-4. 去除 ANSI 颜色码：管道 `| sed 's/\x1b\[[0-9;]*m//g'`
+1. 无参数时默认 `-s`（摘要模式，最简洁）
+2. `full` 关键词 → 去掉 `-s`，输出含 Run 详情
+3. `errors` 关键词 → 执行完整报告，只摘出错误列表
+4. `-a`、`-l`、日期参数直接透传给脚本
+5. 输出结果后做简要中文摘要（关键 KPI + 异常项）
+6. 去除 ANSI 颜色码：管道 `| sed 's/\x1b\[[0-9;]*m//g'`
+7. 不支持 `-f`（实时跟踪），该模式需在 SSH 终端运行
 
 ## 自然语言模式
 
@@ -72,14 +75,16 @@ bash scripts/openclaw-diag.sh -l 5
 
 | 模式 | 参数 | 说明 |
 |------|------|------|
-| 批量分析 | `[日期]` | 解析指定日期全部数据，默认今天 |
-| 实时跟踪 | `-f` | 流式输出，类似 tail -f |
-| 高级跟踪 | `-f --advanced` | 自动开启 diagnostics+debug，退出恢复配置 |
-| 摘要统计 | `-s` | 只输出 KPI 概览，不展示 Run 详情 |
-| Agent 过滤 | `-a <name>` | 只看指定 agent（main/waicode/wairesearch 等） |
+| 摘要统计 | `-s`（默认） | KPI 概览，最简洁 |
+| 完整报告 | 无 `-s` | 含 Run 详情 + 时间线 + 错误列表 |
+| Agent 过滤 | `-a <name>` | 只看指定 agent |
 | 限制数量 | `-l N` | 只显示最近 N 个 Run |
+| 指定日期 | `YYYY-MM-DD` | 默认今天 |
 
-参数可组合：`-s -a main`、`-f -a waicode`、`-l 3 -a wairesearch`。
+参数可组合：`-s -a main`、`-l 3 -a wairesearch`。
+
+> 实时跟踪（`-f`）和高级模式（`--advanced`）需在 SSH 终端运行，
+> 详见 [references/advanced-mode.md](references/advanced-mode.md)。
 
 ## 数据源
 
@@ -128,12 +133,10 @@ bash scripts/openclaw-diag.sh 2026-03-19 -l 10
 bash scripts/openclaw-diag.sh -a waicode -s
 ```
 
-### 实时监控
+### 实时监控（SSH 终端）
 ```bash
-# 开发调试时实时跟踪
+# 需在 SSH 终端运行，不适合 Telegram/聊天
 bash scripts/openclaw-diag.sh -f
-
-# 需要完整日志精度时
 bash scripts/openclaw-diag.sh -f --advanced
 ```
 
