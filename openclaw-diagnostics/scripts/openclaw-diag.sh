@@ -397,6 +397,8 @@ def agent_tag(agent):
 
 # 跟踪每个 agent 的上一次时间戳
 agent_prev_times = {}
+# 当前活跃 agent（无标记事件继承最近一次有标记的 agent）
+current_agent = ''
 
 for line in sys.stdin:
     try:
@@ -408,9 +410,13 @@ for line in sys.stdin:
 
         # 提取 agent
         agent = extract_agent(msg)
+        if agent:
+            current_agent = agent
+        else:
+            agent = current_agent
 
         # 过滤
-        if agent_filter and agent and agent != agent_filter:
+        if agent_filter and agent != agent_filter:
             continue
 
         label = None
