@@ -46,15 +46,18 @@ Phase 2 uses a **3-step pipeline** to avoid timeout on large decks. See [referen
 
 ### Scaling strategy
 
-| Slide count | Strategy | Estimated time |
-|-------------|----------|----------------|
-| ≤15 | Single agent (all-in-one) | 5-8 min |
-| 16-30 | Prep → 2 edit agents (parallel) → Pack | 6-10 min |
-| 31-50+ | Prep → 3-4 edit agents (parallel) → Pack | 8-12 min |
+| Slide count | Strategy | Edit agents | Estimated time |
+|-------------|----------|-------------|----------------|
+| ≤15 | Single agent (all-in-one) | 1 | 3-5 min |
+| 16-25 | Prep → 4 edit agents → Pack | 4 | 4-6 min |
+| 26-40 | Prep → 5-6 edit agents → Pack | 5-6 | 5-8 min |
+| 41-50+ | Prep → 6-8 edit agents → Pack | 6-8 | 6-10 min |
+
+**Target 4-5 slides per batch.** More, smaller batches finish faster than fewer, larger ones.
 
 ### Step 1: Prep agent
 
-Unpack template, trim to only referenced slides, clean orphans. Fast (~2 min).
+Unpack template, trim to only referenced slides, clean orphans, **run fix_rels.py**, **generate edits.json**. Fast (~2-3 min).
 
 ```python
 sessions_spawn({
@@ -65,37 +68,42 @@ sessions_spawn({
 })
 ```
 
-**Wait for completion before Step 2.** The unpacked directory must be ready.
+Prep agent must:
+1. Unpack + trim + clean
+2. `python3 {skill_dir}/scripts/fix_rels.py /tmp/ppt-work/unpacked`
+3. `python3 {skill_dir}/scripts/gen_edits.py /tmp/ppt-work/unpacked {workspace}/plan.yaml /tmp/ppt-work/edits.json`
+
+**Wait for completion before Step 2.** Both unpacked directory and edits.json must be ready.
 
 ### Step 2: Edit agents (parallel)
 
-Split plan.yaml slides into batches of 5-8. Spawn one agent per batch **in parallel**.
+Split slides into batches of **4-5**. Each agent runs `apply_edits.py` with its assigned slides — **no grep/read/edit needed**.
 
 ```python
-# Batch 1: slides 1-8
+# Batch 1: slides 1-5
 sessions_spawn({
-    task: "<edit prompt for slides 1-8>",
+    task: "python3 {skill_dir}/scripts/apply_edits.py /tmp/ppt-work/unpacked /tmp/ppt-work/edits.json slide1.xml slide2.xml slide3.xml slide4.xml slide5.xml",
     agentId: "waicode",
     label: "PPT-EDIT-1",
-    runTimeoutSeconds: 480
+    runTimeoutSeconds: 120
 })
-# Batch 2: slides 9-16
+# Batch 2: slides 6-10
 sessions_spawn({
-    task: "<edit prompt for slides 9-16>",
+    task: "python3 {skill_dir}/scripts/apply_edits.py /tmp/ppt-work/unpacked /tmp/ppt-work/edits.json slide6.xml slide7.xml slide8.xml slide9.xml slide10.xml",
     agentId: "waicode",
     label: "PPT-EDIT-2",
-    runTimeoutSeconds: 480
+    runTimeoutSeconds: 120
 })
-# ... more batches as needed
+# ... more batches
 ```
 
-Each agent edits its assigned slides in `/tmp/ppt-work/unpacked/`. No conflicts because each agent works on different slide files.
+If apply_edits reports missed replacements, spawn a **fix agent** for manual grep→edit on those slides only.
 
 **Wait for ALL edit agents to complete before Step 3.**
 
 ### Step 3: Pack agent
 
-Pack, compress, output. Fast (~2 min).
+**Run fix_rels.py** (second pass to catch edit-phase orphans), then pack, compress, output. Fast (~2 min).
 
 ```python
 sessions_spawn({
@@ -104,6 +112,11 @@ sessions_spawn({
     label: "PPT-PACK",
     runTimeoutSeconds: 300
 })
+```
+
+Pack agent must run `fix_rels.py` before packing:
+```bash
+python3 {skill_dir}/scripts/fix_rels.py /tmp/ppt-work/unpacked
 ```
 
 ### Small decks shortcut (≤15 slides)
@@ -127,9 +140,12 @@ Edit `plan.yaml` and re-run Phase 2. No need to redo Phase 1.
 
 | Issue | Solution |
 |-------|----------|
-| Timeout on large deck | Use 3-step pipeline with parallel edit agents |
+| Timeout on large deck | 4-5 slides/batch, apply_edits.py (~30s/batch vs 8min grep/edit) |
+| apply_edits misses text | Spawn fix agent: grep + manual edit for those slides only |
 | Template too large | Prep step trims to only referenced slides |
-| XML too large to read | `grep` to locate text, then `edit` for surgical replacement |
+| XML too large to read | apply_edits.py handles XML directly — no manual read needed |
 | Output file too large | `scripts/compress_pptx.py` for ZIP + image optimization |
-| Edit conflict | Each batch edits different slide files — no conflicts |
+| Broken rels after trim | Prep runs `fix_rels.py` after trimming |
+| Broken rels after edit | Pack runs `fix_rels.py` before packing |
+| Edit conflict | Each batch targets different slide files — no conflicts |
 | One batch fails | Re-run only that batch, others already done on disk |
