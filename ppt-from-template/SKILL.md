@@ -57,8 +57,6 @@ python3 scripts/assemble_ppt.py <template.pptx> <plan.yaml> <output.pptx>
 
 脚本自动完成：复制版式页 → 删除原始页 → 替换文本 → 保存。
 
-可选：执行 `scripts/compress_pptx.py <output.pptx>` 压缩图片。
-
 ### 输出给用户
 
 将生成的 `.pptx` 文件发送给用户。
