@@ -1,151 +1,99 @@
 ---
 name: ppt-from-template
-description: "Create PPT presentations from existing .pptx templates using a two-phase workflow: Phase 1 plans content into plan.yaml, Phase 2 delegates XML editing to sub-agents. Supports 5-50+ slides via parallel batch editing. Use when: (1) user asks to make a PPT/课件/演示文稿/幻灯片 from a template, (2) user has a .pptx template and wants new content filled in, (3) user says '做个PPT', '用模板做', '基于模板生成'. Requires pptx skill scripts. NOT for: creating PPT from scratch without a template (use pptx skill instead)."
+description: >
+  根据 PPT 模板和用户主题，生成完整演示文稿。先分析模板版式，再构思内容大纲，最后组装生成。
+  全程使用 python-pptx API，确保文件兼容性（PowerPoint/WPS/Keynote 零警告打开）。
+  触发词：PPT、模板、演示文稿、幻灯片、课件、做个PPT、slide deck、presentation、
+  根据模板生成、用模板做。
+  不适用：从零创建无模板 PPT、纯 PDF/Word 转换。
 ---
 
-# PPT from Template
+# PPT From Template
 
-Two-phase workflow: **plan** content (Phase 1, main session) → **build** PPT (Phase 2, sub-agents).
+根据模板版式 + 用户主题，三步生成 PPT。
 
-## Directory Conventions
+## 前置条件
 
-| Path | Purpose |
-|------|---------|
-| `{workspace}/template/` | Source .pptx templates (never modified) |
-| `{workspace}/output/` | Final output files |
-| `{workspace}/plan.yaml` | Content plan (intermediate artifact) |
-| `/tmp/ppt-work/` | Temporary unpack/edit directory (shared across agents) |
-| `~/.openclaw/skills/pptx/scripts/` | pptx skill scripts (unpack, pack, clean, thumbnail) |
+- Python 3.7+, python-pptx, PyYAML (`pip install python-pptx pyyaml`)
+- 用户提供 `.pptx` 模板文件
 
-`{workspace}` = the current agent's workspace directory.
+## 核心流程
 
-## Phase 1: Plan (main session)
+### Step 1: 分析模板（一次性）
 
-Goal: produce `plan.yaml`. **Do not touch XML.**
-
-### 1. Analyze template layouts
+执行 `scripts/analyze_template.py` 解析模板：
 
 ```bash
-python3 -m markitdown "{workspace}/template/TEMPLATE.pptx"
-python3 ~/.openclaw/skills/pptx/scripts/thumbnail.py "{workspace}/template/TEMPLATE.pptx"
+python3 scripts/analyze_template.py <template.pptx> <work_dir>
 ```
 
-Show layout options to user. Identify each slide's number and role.
+输出 `layouts.yaml`，包含：
+- 每种版式类型（cover/section/content/image-text/data/other）
+- 每种版式的代表 slide 编号
+- 可编辑占位符（位置、角色、字号）
 
-### 2. Discuss content with user
+读取 `layouts.yaml`，向用户**展示可用版式**并确认。
 
-Confirm: page count, layout per page, text/data/images per page.
+### Step 2: 构思内容，生成 plan.yaml
 
-### 3. Generate plan.yaml
+根据用户主题 + 可用版式，构思大纲。规则：
+- 第 1 页固定用 `cover` 版式
+- 每章开头用 `section` 版式
+- 正文用 `content` / `image-text` 版式
+- 最后一页用 `cover` 或 `section` 做结尾
+- 每页 body 列表控制在 3-6 条，避免溢出
 
-Write `{workspace}/plan.yaml`. See [references/plan-schema.md](references/plan-schema.md) for schema and examples.
+输出 `plan.yaml`，格式参见 [references/plan-schema.md](references/plan-schema.md)。
 
-## Phase 2: Build (sub-agents)
+**向用户展示大纲**，确认后再执行 Step 3。
 
-Phase 2 uses a **3-step pipeline** to avoid timeout on large decks. See [references/build-prompt.md](references/build-prompt.md) for prompt templates.
+### Step 3: 组装生成
 
-### Scaling strategy
+执行 `scripts/assemble_ppt.py`：
 
-| Slide count | Strategy | Edit agents | Estimated time |
-|-------------|----------|-------------|----------------|
-| ≤15 | Single agent (all-in-one) | 1 | 3-5 min |
-| 16-25 | Prep → 4 edit agents → Pack | 4 | 4-6 min |
-| 26-40 | Prep → 5-6 edit agents → Pack | 5-6 | 5-8 min |
-| 41-50+ | Prep → 6-8 edit agents → Pack | 6-8 | 6-10 min |
-
-**Target 4-5 slides per batch.** More, smaller batches finish faster than fewer, larger ones.
-
-### Step 1: Prep agent
-
-Unpack template, trim to only referenced slides, clean orphans, **run fix_rels.py**, **generate edits.json**. Fast (~2-3 min).
-
-```python
-sessions_spawn({
-    task: "<prep prompt from build-prompt.md>",
-    agentId: "waicode",
-    label: "PPT-PREP",
-    runTimeoutSeconds: 300
-})
-```
-
-Prep agent must:
-1. Unpack + trim + clean
-2. `python3 {skill_dir}/scripts/fix_rels.py /tmp/ppt-work/unpacked`
-3. `python3 {skill_dir}/scripts/gen_edits.py /tmp/ppt-work/unpacked {workspace}/plan.yaml /tmp/ppt-work/edits.json`
-
-**Wait for completion before Step 2.** Both unpacked directory and edits.json must be ready.
-
-### Step 2: Edit agents (parallel)
-
-Split slides into batches of **4-5**. Each agent runs `apply_edits.py` with its assigned slides — **no grep/read/edit needed**.
-
-```python
-# Batch 1: slides 1-5
-sessions_spawn({
-    task: "python3 {skill_dir}/scripts/apply_edits.py /tmp/ppt-work/unpacked /tmp/ppt-work/edits.json slide1.xml slide2.xml slide3.xml slide4.xml slide5.xml",
-    agentId: "waicode",
-    label: "PPT-EDIT-1",
-    runTimeoutSeconds: 120
-})
-# Batch 2: slides 6-10
-sessions_spawn({
-    task: "python3 {skill_dir}/scripts/apply_edits.py /tmp/ppt-work/unpacked /tmp/ppt-work/edits.json slide6.xml slide7.xml slide8.xml slide9.xml slide10.xml",
-    agentId: "waicode",
-    label: "PPT-EDIT-2",
-    runTimeoutSeconds: 120
-})
-# ... more batches
-```
-
-If apply_edits reports missed replacements, spawn a **fix agent** for manual grep→edit on those slides only.
-
-**Wait for ALL edit agents to complete before Step 3.**
-
-### Step 3: Pack agent
-
-**Run fix_rels.py** (second pass to catch edit-phase orphans), then pack, compress, output. Fast (~2 min).
-
-```python
-sessions_spawn({
-    task: "<pack prompt from build-prompt.md>",
-    agentId: "waicode",
-    label: "PPT-PACK",
-    runTimeoutSeconds: 300
-})
-```
-
-Pack agent must run `fix_rels.py` before packing:
 ```bash
-python3 {skill_dir}/scripts/fix_rels.py /tmp/ppt-work/unpacked
+python3 scripts/assemble_ppt.py <template.pptx> <plan.yaml> <output.pptx>
 ```
 
-### Small decks shortcut (≤15 slides)
+脚本自动完成：复制版式页 → 删除原始页 → 替换文本 → 保存。
 
-For ≤15 slides, use a single all-in-one agent instead of the 3-step pipeline:
+可选：执行 `scripts/compress_pptx.py <output.pptx>` 压缩图片。
 
-```python
-sessions_spawn({
-    task: "<all-in-one prompt from build-prompt.md>",
-    agentId: "waicode",
-    label: "PPT-MAKE",
-    runTimeoutSeconds: 600
-})
-```
+### 输出给用户
 
-## Iteration
+将生成的 `.pptx` 文件发送给用户。
 
-Edit `plan.yaml` and re-run Phase 2. No need to redo Phase 1.
+## 关键约束
 
-## Troubleshooting
+### 兼容性（最高优先级）
+- **禁止直接操作 XML**。所有文本替换通过 python-pptx 的 text_frame API
+- 复制 slide 使用 `deep_copy_slide()` 函数，保留原始格式和媒体关系
+- 不删除模板中的任何媒体/关系文件，只通过复制目标页避免引用断裂
 
-| Issue | Solution |
-|-------|----------|
-| Timeout on large deck | 4-5 slides/batch, apply_edits.py (~30s/batch vs 8min grep/edit) |
-| apply_edits misses text | Spawn fix agent: grep + manual edit for those slides only |
-| Template too large | Prep step trims to only referenced slides |
-| XML too large to read | apply_edits.py handles XML directly — no manual read needed |
-| Output file too large | `scripts/compress_pptx.py` for ZIP + image optimization |
-| Broken rels after trim | Prep runs `fix_rels.py` after trimming |
-| Broken rels after edit | Pack runs `fix_rels.py` before packing |
-| Edit conflict | Each batch targets different slide files — no conflicts |
-| One batch fails | Re-run only that batch, others already done on disk |
+### 防超时
+- 页数 ≤ 20：单次执行 assemble_ppt.py（通常 < 1 分钟）
+- 页数 > 20：仍然单次执行（脚本本身很快，瓶颈在 AI 构思内容而非脚本执行）
+- 如果 plan.yaml 内容量大，分批写入 plan.yaml（先写前 15 页，再 append 后续页）
+
+### 内容质量
+- 每页 body 最多 6 条要点
+- 每条要点不超过 25 个字
+- 标题不超过 15 个字
+- 副标题不超过 30 个字
+
+## 迭代修改
+
+用户反馈后：
+1. 修改 `plan.yaml` 中对应页的 content
+2. 重新执行 `assemble_ppt.py` 即可
+3. 无需重新分析模板
+
+## 故障排除
+
+| 问题 | 原因 | 解决 |
+|------|------|------|
+| PPT 打开报错 | 直接操作了 XML | 必须用 python-pptx API |
+| 文字没替换 | 形状角色匹配失败 | 检查 layouts.yaml 中的占位符 |
+| 格式丢失 | 未保留原 run 格式 | assemble_ppt.py 已处理 |
+| 图片丢失 | slide 复制不完整 | deep_copy_slide 已复制关系 |
+| 页数不对 | plan.yaml source_slide 错误 | 检查编号是否对应模板 |
