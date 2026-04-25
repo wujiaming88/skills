@@ -20,7 +20,7 @@ def main():
     parser = argparse.ArgumentParser(description="SVG diagram screenshot via Playwright")
     parser.add_argument("html", help="Path to HTML file containing SVG diagram")
     parser.add_argument("output", nargs="?", default=None, help="Output PNG path")
-    parser.add_argument("--scale", type=int, default=2, help="Device scale factor (default: 2)")
+    parser.add_argument("--scale", type=int, default=4, help="Device scale factor (default: 4)")
     parser.add_argument("--width", type=int, default=1600, help="Viewport width (default: 1600)")
     parser.add_argument("--height", type=int, default=1000, help="Viewport height (default: 1000)")
     parser.add_argument("--wait", type=int, default=1500, help="Wait ms after load (default: 1500)")

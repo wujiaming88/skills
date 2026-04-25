@@ -110,7 +110,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch()
     page = browser.new_page(
         viewport={"width": 1600, "height": 1000},
-        device_scale_factor=2,  # 2x for good quality + reasonable file size
+        device_scale_factor=4,  # 4x ultra-high res (default)
     )
     page.goto("file:///path/to/diagram.html", wait_until="networkidle")
     page.wait_for_timeout(1500)
@@ -165,4 +165,12 @@ See `references/example-hermes.html` for a complete working example (Hermes Agen
 
 Output `MEDIA:<path>` for inline delivery, or `openclaw message send --channel telegram --target <id> --media <path> --force-document` for Telegram.
 
-If PNG exceeds ~500KB, use 2x scale (default). Only use 4x for print-quality needs.
+If PNG exceeds ~1MB for Telegram delivery, convert to JPEG (quality=95):
+
+```python
+from PIL import Image
+img = Image.open("diagram.png")
+img.save("diagram.jpg", "JPEG", quality=95, optimize=True)
+```
+
+Default is 4x (6400×4000px for 1600×1000 canvas). Always use maximum resolution.
