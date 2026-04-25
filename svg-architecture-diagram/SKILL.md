@@ -133,7 +133,7 @@ See `references/design-system.md` for the complete color palette, card styles, a
    - 440px container → max 57 chars
 2. **Long text → split into multiple `<text>` elements** with Y offset +15px each
 3. **Always leave 20px padding** on each side of text inside cards
-4. **Test at 1x scale** before generating final 2x screenshot
+4. **Test at 1x scale** before generating final 4x screenshot
 
 ### Connection Line Rules
 1. **Never use CSS for connections** — always SVG `<line>` or `<path>`
@@ -141,12 +141,15 @@ See `references/design-system.md` for the complete color palette, card styles, a
 3. **Straight lines** when possible; use `<path>` L-segments for bends
 4. **Avoid crossing lines** — rearrange layout if lines would cross
 5. **Label every connection** — brief verb/noun near the midpoint
+6. **⚠️ Minimum 20px gap between vertically stacked cards** — Arrow markers are 8px long. If the gap between cards is less than 20px, the arrow will completely cover the line, making it look like "arrow only, no line". Use card height 34px + gap 22px = 56px per step.
+7. **Connection line length must be at least 17px** — This ensures 9px visible line + 8px arrow marker. Example: card bottom at y=324, next card top at y=346, line from y1=324 to y2=343 (19px).
+8. **Never make line length < marker size (8px)** — The line will be invisible.
 
 ### Layout Rules
 1. **Top-to-bottom** primary flow (input at top, output at bottom/right)
 2. **Left-right symmetry** when possible
 3. **Group related modules** vertically (e.g., memory layers stacked)
-4. **Minimum 12px gap** between cards
+4. **Minimum 20px gap** between vertically stacked cards (see Connection Line Rules)
 5. **Color-code by function** — see design system for standard palette
 6. **Include a legend** (bottom-right corner) explaining colors and line types
 7. **Include a title** (top center) and source attribution (bottom center)
@@ -157,9 +160,12 @@ See `references/design-system.md` for the complete color palette, card styles, a
 3. **Chinese text**: use `PingFang SC` / `Microsoft YaHei` fallback
 4. **Font sizes**: titles 13-14px, descriptions 10-11px, metadata 9-10px
 
-## Example
+## Examples
 
-See `references/example-hermes.html` for a complete working example (Hermes Agent architecture diagram) demonstrating all patterns above.
+Two complete working examples are included:
+
+- `references/example-hermes.html` — Hermes Agent architecture (6 modules, medium complexity)
+- `references/example-openclaw.html` — OpenClaw platform architecture (12 modules, high complexity, demonstrates proper vertical card spacing for Agent Loop steps)
 
 ## Delivery
 

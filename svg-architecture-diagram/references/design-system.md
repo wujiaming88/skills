@@ -71,3 +71,11 @@
 3. Long text → split into two `<text>` lines (Y offset +16px)
 4. Use `text-anchor="middle"` for centered headers
 5. Use left-aligned for descriptions in outlined cards
+
+## Card Spacing Rules (CRITICAL)
+
+1. **Vertical stacked cards**: card height 34px + gap 22px = **56px per step**
+2. **Connection line**: start at card bottom (y + height), end at next card top (y) minus 3px
+3. **Minimum line length**: 17px (9px visible line + 8px arrow marker)
+4. **Arrow marker size**: 8px — if line < 8px, arrow covers entire line (invisible)
+5. **Example**: card at y=290 h=34 → bottom=324. Next card y=346. Line: y1=324 y2=343 (19px ✓)
