@@ -1,6 +1,6 @@
 ---
 name: deep-investment-research
-description: "系统化投研能力中枢。覆盖宏观/行业/政策/个股/投资可行性/风险/投资规划七类研究，内置9条研究红线、深度研究5步法、6专题框架、5研究模板、8重点行业一手源清单，以及多源数据采集脚本（SEC EDGAR/HKEX/AKShare/FRED/政策门户等）。Use for: 任何投资研究、行业分析、个股深度研究、政策解读、可行性评估、风险分析、投资规划，以及研究所需的真实一手数据采集。纯研究，不做盯盘/交易信号/交易执行。"
+description: "系统化投研能力中枢。覆盖宏观/行业/政策/个股/投资可行性/风险/投资规划七类研究，内置9条研究红线、深度研究5步法、7专题框架、5研究模板、8重点行业一手源清单，以及多源数据采集脚本（SEC EDGAR/HKEX/AKShare/FRED/政策门户等）。Use for: 任何投资研究、行业分析、公司研究、个股深度研究、政策解读、可行性评估、风险分析、投资规划，以及研究所需的真实一手数据采集。纯研究，不做盯盘/交易信号/交易执行。"
 requires:
   bins:
     - python3
@@ -38,7 +38,8 @@ requires:
 | 课题 | 框架 | 模板 |
 |------|------|------|
 | 行业深度研究 | methodology/industry-research.md | templates/01 |
-| 个股深度研究 | methodology/stock-deep-dive.md | templates/02 |
+| 公司研究（看懂生意本身） | methodology/company-research.md | — |
+| 个股深度研究（投资判断） | methodology/stock-deep-dive.md | templates/02 |
 | 投资可行性分析 | methodology/feasibility-analysis.md | templates/03 |
 | 政策研究与追踪 | methodology/policy-research.md | templates/04 |
 | 风险分析 | methodology/risk-analysis.md | templates/05 |
