@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════
+ 内页②：金句卡 — 一句话金句大字 + 署名，适合做笔记收尾图
+ 用途：小红书笔记最后一张(P9)，把全文的「可摘抄金句」放大成卡片，引收藏/转发。
+ 占位符：
+   {{QUOTE}}       金句正文(可含 <span class="hl"> / hl-box 高亮关键词)
+                   建议 ≤30 字，一两句；太长会自动缩字号(挂 class="quote q-long")
+   {{SIGN}}        署名，默认「—— 五岳AI公司」(可改成「—— 小帅 / 五岳团队」)
+   {{TAG}}         顶部小标签，如「本周复盘」(可留空)
+ 高亮词机制：金句里把最狠的词包 <span class="hl-box">词</span> 绿底，最抢眼。
+ 尺寸 1080×1440，共用 brand.css 视觉 IP。
+════════════════════════════════════════════════════════════════ -->
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  body {
+    background: radial-gradient(circle at 50% 28%, #142d20 0%, var(--bg-dark) 62%);
+    padding: 110px 96px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
+  }
+  .mark {
+    font-size: 200px; font-weight: 900; color: var(--accent-green);
+    line-height: 0.7; height: 120px; opacity: 0.9;
+  }
+  .quote {
+    font-size: 78px; font-weight: 900; line-height: 1.42; letter-spacing: 1px;
+    margin: 30px 0 56px; word-break: break-word; overflow-wrap: anywhere;
+    max-width: 880px;
+  }
+  /* 金句很长时加 class="quote q-long" 缩到 62px */
+  .quote.q-long { font-size: 62px; line-height: 1.4; }
+  .quote .hl { color: var(--accent-green); }
+  .divider { width: 120px; height: 8px; background: var(--accent-green); border-radius: 6px; margin-bottom: 44px; }
+  .sign { font-size: 42px; font-weight: 700; color: var(--text-sub); letter-spacing: 2px; }
+  .tag-top { margin-bottom: 48px; }
+</style>
+</head>
+<body>
+  <div class="tag-top"><span class="section-tag">{{TAG}}</span></div>
+  <div class="mark">&ldquo;</div>
+  <div class="quote fit">{{QUOTE}}</div>
+  <div class="divider"></div>
+  <div class="sign fit">{{SIGN}}</div>
+  <div class="brand-badge"><span class="peak">🏔</span> 五岳AI公司</div>
+</body>
+</html>

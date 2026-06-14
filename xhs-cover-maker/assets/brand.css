@@ -1,0 +1,82 @@
+/* 五岳 AI 公司 · 视觉 IP（封面 3 套 + 内页 2 套 共用） */
+/* 改这里就丢失账号辨识度,非必要别动 */
+
+:root {
+  --bg-dark: #0E1116;        /* 炭黑主底 */
+  --bg-deep: #0B1F1A;        /* 深墨绿备选底 */
+  --accent-green: #00E676;   /* 荧光绿强调(终端/代码感) */
+  --accent-amber: #FFAB00;   /* 橙黄强调 */
+  --text-main: #F5F7FA;      /* 主文字 */
+  --text-sub: #9AA4B2;       /* 副文字 */
+  --card: #161B22;           /* 卡片底 */
+  --line: #2A323D;           /* 描边 */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 1080px;
+  height: 1440px;
+  /* 末尾的 "Noto Color Emoji" 让 🏔📝🎯🛠⚡💬✓ 等 emoji 在 WeasyPrint 下出彩色字形,
+     不是空白框。中文走 Noto Sans CJK SC。顺序别动。 */
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
+               "Noto Sans CJK SC", sans-serif, "Noto Color Emoji";
+  background: var(--bg-dark);
+  color: var(--text-main);
+  overflow: hidden;
+  position: relative;
+}
+
+/* 关键词高亮:正文里给关键词包 <span class="hl"> 或 <span class="hl-amber"> */
+/* —— 这就是「高亮词机制」:content-forge 指定哪个词描绿/描橙/底色块,就包对应 class —— */
+.hl { color: var(--accent-green); }            /* 描绿(默认强调) */
+.hl-amber { color: var(--accent-amber); }      /* 描橙 */
+.hl-box {                                       /* 绿底色块(最抢眼) */
+  background: var(--accent-green);
+  color: var(--bg-dark);
+  padding: 0 12px;
+  border-radius: 8px;
+}
+.hl-box-amber {                                 /* 橙底色块 */
+  background: var(--accent-amber);
+  color: var(--bg-dark);
+  padding: 0 12px;
+  border-radius: 8px;
+}
+
+/* 固定 logo 角标(右下角,每张图都有) */
+.brand-badge {
+  position: absolute;
+  right: 48px;
+  bottom: 44px;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-sub);
+  letter-spacing: 1px;
+  z-index: 99;
+}
+.brand-badge .peak { color: var(--accent-green); }
+
+/* 顶部栏目标签(可选) */
+.section-tag {
+  display: inline-block;
+  font-size: 30px;
+  font-weight: 700;
+  padding: 10px 26px;
+  border: 3px solid var(--accent-green);
+  color: var(--accent-green);
+  border-radius: 999px;
+  letter-spacing: 2px;
+}
+
+/* ── 防溢出工具(长文案不爆版) ──────────────────────────── */
+/* 文字超长时自动换行、断词,不撑破容器 */
+.fit { word-break: break-word; overflow-wrap: anywhere; }
+/* 副标/正文最多 N 行,超出省略号(配合各模板按需挂 .clamp-2 / .clamp-3) */
+.clamp-2, .clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp-2 { -webkit-line-clamp: 2; }
+.clamp-3 { -webkit-line-clamp: 3; }

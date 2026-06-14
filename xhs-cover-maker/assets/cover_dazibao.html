@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════
+ 版式①：大字报 — 超大主标题占画面50%+，适合 ③翻车 / ④教程 / ②人设
+ 占位符（content-forge 的「封面变量」直接映射这些）：
+   {{SECTION}}     顶部栏目标签，如「翻车复盘」「幕后搭建」(≤6字)
+   {{TITLE_1}}     主标题第 1 行(可含 <span class="hl"> 高亮词)
+   {{TITLE_2}}     主标题第 2 行(可含高亮；不需要分两行就留空)
+   {{SUB}}         副标，1-2 行，挂 .clamp-2 防溢出
+ 高亮词机制：在 {{TITLE_*}} 里把要强调的词包成
+   <span class="hl">词</span>        描绿
+   <span class="hl-amber">词</span>  描橙
+   <span class="hl-box">词</span>    绿底色块(最抢眼，留给最狠的那个词)
+ 注意：主标题总字数建议 ≤12；超 7 字单行会自动缩字号(JS-free，靠 .t-long)。
+════════════════════════════════════════════════════════════════ -->
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  body {
+    background: radial-gradient(circle at 30% 20%, #15301f 0%, var(--bg-dark) 60%);
+    padding: 90px 80px;
+    display: flex;
+    flex-direction: column;
+  }
+  .top { margin-bottom: 60px; }
+  .title-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
+  }
+  .title {
+    font-size: 130px;
+    font-weight: 900;
+    line-height: 1.18;
+    letter-spacing: 2px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  /* 标题很长时给 .title 加 class="title t-long" 自动缩到 104px，防溢出 */
+  .title.t-long { font-size: 104px; line-height: 1.16; }
+  .title .line { display: block; }
+  .sub {
+    margin-top: 50px;
+    font-size: 42px;
+    font-weight: 500;
+    color: var(--text-sub);
+    line-height: 1.5;
+  }
+  .deco-bar {
+    width: 160px; height: 14px;
+    background: var(--accent-green);
+    border-radius: 8px;
+    margin-top: 60px;
+  }
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="section-tag">{{SECTION}}</span>
+  </div>
+  <div class="title-wrap">
+    <div class="title fit">
+      <span class="line">{{TITLE_1}}</span>
+      <span class="line">{{TITLE_2}}</span>
+    </div>
+    <div class="sub fit clamp-2">{{SUB}}</div>
+    <div class="deco-bar"></div>
+  </div>
+  <div class="brand-badge"><span class="peak">🏔</span> 五岳AI公司</div>
+</body>
+</html>

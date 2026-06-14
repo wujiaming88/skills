@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════
+ 内页①：要点信息图 — 标题 + 3-4 个要点条目(带 emoji/序号)，留白克制
+ 用途：小红书笔记 P2-P5 内页，承接封面把「干货要点」拆条呈现。
+ 占位符：
+   {{SECTION}}     顶部小标签(可留空，留空就删掉那行)
+   {{TITLE}}       页标题(可含 <span class="hl"> 高亮词)
+   {{P1_ICON}}     要点1 emoji，如 📝🎯🛠⚡(WeasyPrint 下出彩)
+   {{P1_TITLE}}    要点1 小标题(一句话)
+   {{P1_DESC}}     要点1 说明(可留空)
+   {{P2_ICON}}/{{P2_TITLE}}/{{P2_DESC}}  要点2
+   {{P3_ICON}}/{{P3_TITLE}}/{{P3_DESC}}  要点3
+   {{P4_*}}        要点4(可选，不用就整块删掉 .point 第4项)
+ 高亮词机制：标题/要点里包 <span class="hl"> / hl-amber / hl-box 同上。
+ 尺寸 1080×1440，共用 brand.css 视觉 IP。
+════════════════════════════════════════════════════════════════ -->
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  body {
+    background: radial-gradient(circle at 78% 8%, #16271f 0%, var(--bg-dark) 55%);
+    padding: 96px 80px 120px;
+    display: flex; flex-direction: column;
+  }
+  .top { margin-bottom: 36px; }
+  .page-title {
+    font-size: 78px; font-weight: 900; line-height: 1.22; letter-spacing: 1px;
+    margin-bottom: 64px; word-break: break-word; overflow-wrap: anywhere;
+  }
+  .page-title .hl { color: var(--accent-green); }
+  .points { display: flex; flex-direction: column; gap: 38px; flex: 1; min-height: 0; }
+  .point {
+    background: var(--card); border: 2px solid var(--line); border-left: 10px solid var(--accent-green);
+    border-radius: 22px; padding: 40px 44px; display: flex; gap: 34px; align-items: flex-start;
+  }
+  .point:nth-child(even) { border-left-color: var(--accent-amber); }
+  .point .icon { font-size: 70px; line-height: 1; flex-shrink: 0; }
+  .point .body { min-width: 0; }
+  .point .p-title { font-size: 50px; font-weight: 800; line-height: 1.32; word-break: break-word; }
+  .point .p-desc { font-size: 36px; font-weight: 500; color: var(--text-sub); line-height: 1.5; margin-top: 14px; word-break: break-word; }
+</style>
+</head>
+<body>
+  <div class="top"><span class="section-tag">{{SECTION}}</span></div>
+  <div class="page-title fit">{{TITLE}}</div>
+  <div class="points">
+    <div class="point"><div class="icon">{{P1_ICON}}</div><div class="body"><div class="p-title fit">{{P1_TITLE}}</div><div class="p-desc fit clamp-2">{{P1_DESC}}</div></div></div>
+    <div class="point"><div class="icon">{{P2_ICON}}</div><div class="body"><div class="p-title fit">{{P2_TITLE}}</div><div class="p-desc fit clamp-2">{{P2_DESC}}</div></div></div>
+    <div class="point"><div class="icon">{{P3_ICON}}</div><div class="body"><div class="p-title fit">{{P3_TITLE}}</div><div class="p-desc fit clamp-2">{{P3_DESC}}</div></div></div>
+    <div class="point"><div class="icon">{{P4_ICON}}</div><div class="body"><div class="p-title fit">{{P4_TITLE}}</div><div class="p-desc fit clamp-2">{{P4_DESC}}</div></div></div>
+  </div>
+  <div class="brand-badge"><span class="peak">🏔</span> 五岳AI公司</div>
+</body>
+</html>

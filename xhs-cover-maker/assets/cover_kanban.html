@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════
+ 版式③：看板 — 终端/仪表盘风 + 数据卡片，适合 ①数据成果
+ 占位符：
+   {{TITLE}}        标题(可含 <span class="hl"> 高亮词)，挂 .clamp-2
+   {{SUB}}          副标一行
+   {{TERM_LINE_1}}  终端第1行(命令，跟在 $ 后)
+   {{TERM_LINE_2}}  终端第2行(成功输出，跟在 ✓ 后)
+   {{TERM_LINE_3}}  终端第3行(成功输出，跟在 ✓ 后)
+   {{STAT_1_NUM}}   数据卡1 大数字(绿)，如「20分钟」「12篇」
+   {{STAT_1_LABEL}} 数据卡1 说明
+   {{STAT_2_NUM}}   数据卡2 大数字(橙)
+   {{STAT_2_LABEL}} 数据卡2 说明
+ 高亮词机制：标题里包 <span class="hl"> / hl-amber / hl-box 同上。
+════════════════════════════════════════════════════════════════ -->
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  body { padding: 80px 70px; display: flex; flex-direction: column; }
+  .headline { font-size: 72px; font-weight: 900; line-height: 1.25; margin-bottom: 24px;
+    word-break: break-word; overflow-wrap: anywhere; }
+  .headline .hl { color: var(--accent-green); }
+  .sub { font-size: 36px; color: var(--text-sub); margin-bottom: 50px; }
+  .terminal {
+    background: #05080b; border: 2px solid var(--line); border-radius: 20px;
+    padding: 36px 40px; margin-bottom: 50px; font-family: "Menlo","Consolas",monospace;
+    overflow: hidden;
+  }
+  .term-dots { margin-bottom: 24px; }
+  .term-dots span { display:inline-block; width:20px; height:20px; border-radius:50%; margin-right:12px; }
+  .d1{background:#FF5F56}.d2{background:#FFBD2E}.d3{background:#27C93F}
+  .term-line { font-size: 32px; line-height: 1.8; color: var(--text-sub); word-break: break-word; overflow-wrap: anywhere; }
+  .term-line .ok { color: var(--accent-green); }
+  .term-line .prompt { color: var(--accent-amber); }
+  .stats { display: flex; gap: 32px; flex: 1; min-height: 0; }
+  .stat {
+    flex: 1; background: var(--card); border: 2px solid var(--line);
+    border-radius: 24px; padding: 50px 36px; display: flex; flex-direction: column;
+    justify-content: center; overflow: hidden;
+  }
+  .stat .num { font-size: 104px; font-weight: 900; color: var(--accent-green); line-height: 1.05;
+    word-break: break-word; }
+  .stat .num.amber { color: var(--accent-amber); }
+  .stat .label { font-size: 38px; color: var(--text-main); margin-top: 24px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="headline fit clamp-2">{{TITLE}}</div>
+  <div class="sub fit clamp-2">{{SUB}}</div>
+  <div class="terminal">
+    <div class="term-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+    <div class="term-line fit"><span class="prompt">$</span> {{TERM_LINE_1}}</div>
+    <div class="term-line fit"><span class="ok">✓</span> {{TERM_LINE_2}}</div>
+    <div class="term-line fit"><span class="ok">✓</span> {{TERM_LINE_3}}</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="num fit">{{STAT_1_NUM}}</div><div class="label fit">{{STAT_1_LABEL}}</div></div>
+    <div class="stat"><div class="num amber fit">{{STAT_2_NUM}}</div><div class="label fit">{{STAT_2_LABEL}}</div></div>
+  </div>
+  <div class="brand-badge"><span class="peak">🏔</span> 五岳AI公司</div>
+</body>
+</html>

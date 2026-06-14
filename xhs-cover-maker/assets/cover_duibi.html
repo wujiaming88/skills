@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════
+ 版式②：对比 — 左右分屏「需求 vs 成品」「人 vs AI」，适合 ①成果 / 反差
+ 占位符：
+   {{TITLE}}       顶部标题(可含高亮词 span)，挂 .clamp-2 防溢出
+   {{LEFT_TAG}}    左栏标签，如「我说的」「实习生」(灰色弱栏)
+   {{LEFT_BODY}}   左栏正文小字
+   {{LEFT_BIG}}    左栏大字数据/结论(可留空)
+   {{RIGHT_TAG}}   右栏标签，如「AI做的」「五岳团队」(绿色强栏)
+   {{RIGHT_BODY}}  右栏正文小字
+   {{RIGHT_BIG}}   右栏大字数据/结论(可留空)
+ 高亮词机制：任意文本里包 <span class="hl"> / hl-amber / hl-box 同上。
+════════════════════════════════════════════════════════════════ -->
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  body { padding: 80px 70px; display: flex; flex-direction: column; }
+  .headline {
+    font-size: 76px; font-weight: 900; line-height: 1.25;
+    text-align: center; margin-bottom: 70px;
+    word-break: break-word; overflow-wrap: anywhere;
+  }
+  .compare {
+    flex: 1; display: flex; gap: 40px; align-items: stretch; min-height: 0;
+  }
+  .col {
+    flex: 1; border-radius: 28px; padding: 56px 44px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .col-left { background: var(--card); border: 3px solid var(--line); }
+  .col-right { background: linear-gradient(160deg, #0d3a28, #103d2b); border: 3px solid var(--accent-green); }
+  .col-tag {
+    font-size: 40px; font-weight: 800; margin-bottom: 36px;
+    padding-bottom: 20px; border-bottom: 3px solid var(--line);
+  }
+  .col-left .col-tag { color: var(--text-sub); }
+  .col-right .col-tag { color: var(--accent-green); }
+  .col-body { font-size: 46px; font-weight: 600; line-height: 1.6; word-break: break-word; overflow-wrap: anywhere; }
+  .col-body .big { font-size: 96px; font-weight: 900; display: block; margin-top: 20px; line-height: 1.1; }
+  .col-right .col-body .big { color: var(--accent-green); }
+  .vs {
+    position: absolute; left: 50%; top: 54%; transform: translate(-50%,-50%);
+    font-size: 60px; font-weight: 900; color: var(--accent-amber);
+    background: var(--bg-dark); border-radius: 50%; width: 124px; height: 124px;
+    display: flex; align-items: center; justify-content: center; z-index: 50;
+    border: 5px solid var(--accent-amber);
+    box-shadow: 0 0 0 10px var(--bg-dark);
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+  <div class="headline fit clamp-2">{{TITLE}}</div>
+  <div class="compare">
+    <div class="col col-left">
+      <div class="col-tag fit">{{LEFT_TAG}}</div>
+      <div class="col-body fit">{{LEFT_BODY}}<span class="big">{{LEFT_BIG}}</span></div>
+    </div>
+    <div class="col col-right">
+      <div class="col-tag fit">{{RIGHT_TAG}}</div>
+      <div class="col-body fit">{{RIGHT_BODY}}<span class="big">{{RIGHT_BIG}}</span></div>
+    </div>
+  </div>
+  <div class="vs">VS</div>
+  <div class="brand-badge"><span class="peak">🏔</span> 五岳AI公司</div>
+</body>
+</html>
