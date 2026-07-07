@@ -18,7 +18,7 @@ You already know SOLID, DRY, YAGNI, design-by-contract, Clean Architecture. This
 
 Do not size-gate these. A 5-line migration or 10-line auth change is exactly where these bite.
 
-1. **Verify before you use it.** Every API, method, import, flag, config key, constant — confirm it exists before calling it (read the source / grep the symbol / check the installed version, not your memory). If you could not verify, write `[UNVERIFIED]` next to it. Never present a guess as fact.
+1. **Verify before you use it.** Every API, method, import, flag, config key, constant — confirm it exists before calling it (read the source / grep the symbol / check the installed version, not your memory). Never present a guess as fact. If you *genuinely cannot* verify (e.g. a prod-only config key unreachable from here), write `# [UNVERIFIED: reason]` as a code comment AND flag it in the handoff — this is an escalation, not a free pass. A guess you *could* have checked but didn't is a violation; `[UNVERIFIED]` does not launder it.
 2. **Never break a published contract silently.** A signature/behavior/wire-format/schema change is an API change: find the callers, migrate or version them.
 3. **Migrations are expand → migrate → contract.** Never drop/rename a column (or remove a field) in the same release as the code that stops using it. Reads stay backward-compatible.
 4. **Never weaken or delete a test to make it pass.** If a test fails, fix the code or fix the test's *correctness* — never gut the assertion.
@@ -26,13 +26,13 @@ Do not size-gate these. A 5-line migration or 10-line auth change is exactly whe
 6. **Secrets/PII never touch code or logs.** Read from the existing secret/config mechanism; never hardcode (incl. tests/fixtures), never commit `.env`, redact in errors.
 7. **Authorize at the boundary — not just validate shape.** Parameterize queries; treat all external input as hostile.
 8. **Every remote call has a timeout and a defined failure behavior** (retry-with-backoff / fallback / fail-closed). Retried or at-least-once operations need an idempotency key.
-9. **Scope is bounded.** Every changed line must trace to the request. Necessary scope (a wide rename, a required migration) is fine; unrelated "improvements" are not. A refactor and a feature never share one commit.
+9. **Scope is bounded.** Every changed line must trace to the request. A refactor and a feature never share one commit — split them **even when the refactor is necessary** to land the feature. Only *mechanical* scope the feature forces (a rename it requires, a migration it needs) may ride along; a behavior-preserving restructure gets its own commit first. Unrelated "improvements" never ride along.
 
 ---
 
 ## TRADE-OFF CALLS (where your defaults are wrong — bias as stated)
 
-You default to *too much structure*. These pull you back. When unsure, pick the simpler option.
+You default to *too much structure*. These pull you back. When unsure, pick the simpler option. **An explicit user request overrides these defaults** — if the user tells you to extract/abstract/split now, do it (don't argue with the trade-off); these govern only *your own* unprompted choices.
 
 - **Abstraction:** Introduce an interface/base class **only when ≥2 real implementations exist now, or a test seam genuinely needs it.** One implementation → concrete class. Building a "framework" for one caller is the defect, not good design.
 - **Branch vs. polymorphism:** A plain `if` is usually correct. Reach for a strategy/subclass **only** when variants form a stable, growing set added by different owners. Unsure → `if`.
@@ -74,8 +74,9 @@ Output this checklist filled in. A failed item means you are **not done** — fi
 ```
 □ Contract declared and matches the implementation
 □ New behavior + declared error modes covered by tests
-□ Tests actually run — output/summary attached (not "should pass")
-□ No API/import/config/constant used unverified (or marked [UNVERIFIED])
+□ Tests actually run — output/summary attached, and it names the error-mode cases (not just "14 passed", not "should pass")
+□ Every API/import/config/constant was verified — NOT ticked by slapping [UNVERIFIED] on a guess. An **un-escalated** unverified RED-LINE-#1 symbol = NOT done. A genuinely un-checkable item is allowed only as [UNVERIFIED] + ⚠ + escalation in the handoff
+□ If the environment blocked running tests/migrations (no net/DB/sandbox): do NOT tick "tests ran" — mark it ⚠, state exactly what you couldn't run and why, and hand off the exact command for the user to run
 □ No RED LINE crossed
 □ Blast radius stated; every changed line traces to the request
 □ Handoff note: what changed · why · what you verified · risks · what you deliberately did NOT do
