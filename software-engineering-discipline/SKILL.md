@@ -1,103 +1,84 @@
 ---
 name: software-engineering-discipline
-description: "Engineering discipline for coding agents on large, complex codebases. Apply when writing, refactoring, or reviewing non-trivial code in real systems — enforce architecture boundaries, SOLID/cohesion, contracts, concurrency, migrations, security, and bounded blast radius instead of just completing the task."
+description: "Engineering discipline for AI coding agents. Apply when writing, refactoring, or reviewing code that will be maintained. Not a tutorial on SOLID/DRY (you already know those) — it calibrates the trade-off calls and hard limits where agents predictably go wrong, and forces you to verify instead of guess."
 ---
 
 # Software Engineering Discipline
 
-Constraints for coding agents working in large, complex, real systems. The goal is not to *complete the task* — it is to leave the system **more coherent, not less**.
+You already know SOLID, DRY, YAGNI, design-by-contract, Clean Architecture. This skill does **not** re-teach them. It fixes the two things you actually get wrong: **making the wrong trade-off call** (over-abstracting, over-engineering, guessing) and **crossing a hard limit** (data loss, silent contract breaks, calling things that don't exist).
 
-**A passing test is necessary, not sufficient. Code that works but corrodes the architecture is a defect.**
+**Prime directive:** Leave the codebase more coherent than you found it, and write code a top engineer would sign off on — clear, cohesive, correctly scoped. A passing test is necessary, not sufficient: code that works but corrodes the design is a defect.
 
-**Skip this skill when:** the change is <~50 LOC, single-file, throwaway prototype/spike, or glue/script code with no existing tests. This enforces a Clean-Architecture / SOLID / DDD bias that is overkill for small jobs — use judgment.
+**Apply to:** any code that will be read or maintained again.
+**Relax (not the RED LINES) for:** genuine throwaway — a scratch script, a spike you will delete, a one-off you won't commit. Size is not the test; *"will anyone maintain this?"* is.
 
-## 0. Understand Before You Touch
+---
 
-Before writing in an existing codebase:
-- Read the module you're changing AND its callers/callees. Trace the data flow in and out.
-- Find the existing pattern for this kind of work (`grep` a sibling feature) and follow it. Match existing style even if you'd do it differently.
-- Name the architectural layer you're in (domain / application / infrastructure / UI) and its rules.
-- Read the existing tests; they encode the intended behavior and contracts.
+## RED LINES (never cross, regardless of how small the change is)
 
-Self-check: Can you name the layer, the convention, and who depends on this code? If not, stop and investigate.
+Do not size-gate these. A 5-line migration or 10-line auth change is exactly where these bite.
 
-## 1. Boundaries & Dependency Direction
+1. **Verify before you use it.** Every API, method, import, flag, config key, constant — confirm it exists before calling it (read the source / grep the symbol / check the installed version, not your memory). If you could not verify, write `[UNVERIFIED]` next to it. Never present a guess as fact.
+2. **Never break a published contract silently.** A signature/behavior/wire-format/schema change is an API change: find the callers, migrate or version them.
+3. **Migrations are expand → migrate → contract.** Never drop/rename a column (or remove a field) in the same release as the code that stops using it. Reads stay backward-compatible.
+4. **Never weaken or delete a test to make it pass.** If a test fails, fix the code or fix the test's *correctness* — never gut the assertion.
+5. **Never swallow an error into a silent default.** No `except: return None` / empty `catch {}`. Handle it, or let it propagate with context.
+6. **Secrets/PII never touch code or logs.** Read from the existing secret/config mechanism; never hardcode (incl. tests/fixtures), never commit `.env`, redact in errors.
+7. **Authorize at the boundary — not just validate shape.** Parameterize queries; treat all external input as hostile.
+8. **Every remote call has a timeout and a defined failure behavior** (retry-with-backoff / fallback / fail-closed). Retried or at-least-once operations need an idempotency key.
+9. **Scope is bounded.** Every changed line must trace to the request. Necessary scope (a wide rename, a required migration) is fine; unrelated "improvements" are not. A refactor and a feature never share one commit.
 
-- Don't reach across a layer to grab internals — call the public interface.
-- **DIP:** depend on abstractions, not concretions. High-level policy must not import low-level detail.
-- Dependencies should also point toward the more *stable* module (Stable Dependencies Principle).
-- No new circular dependencies. No domain logic importing framework/IO.
-- (This skill's style) keep business rules out of controllers/handlers; if your framework's idiom differs, follow the codebase's existing convention.
-- If the clean change requires crossing a boundary, surface it and propose the seam — don't smuggle it through.
+---
 
-Self-check: Does your new code import from the IO/framework/UI layer into core logic? If yes, you're inverting the wrong way.
+## TRADE-OFF CALLS (where your defaults are wrong — bias as stated)
 
-## 2. Cohesion & Single Responsibility
+You default to *too much structure*. These pull you back. When unsure, pick the simpler option.
 
-- A unit should do one coherent thing. **If its name or docstring needs an "and", split it.**
-- Separate policy vs mechanism, decision vs side-effect.
-- One responsibility lives in one place; don't smear it across files, don't pile unrelated ones into one class.
-- Prefer adding a new code path over threading a special-case `if` deep into stable core logic — **but a plain `if` is often the correct, simplest answer; don't add inheritance/strategy ceremony just to honor OCP.**
+- **Abstraction:** Introduce an interface/base class **only when ≥2 real implementations exist now, or a test seam genuinely needs it.** One implementation → concrete class. Building a "framework" for one caller is the defect, not good design.
+- **Branch vs. polymorphism:** A plain `if` is usually correct. Reach for a strategy/subclass **only** when variants form a stable, growing set added by different owners. Unsure → `if`.
+- **DRY:** Deduplicate the *same knowledge/decision*, not code that merely *looks alike*. Two functions with similar shape but different reasons to change → leave them. Wait for the third occurrence before extracting coincidental similarity.
+- **Cohesion:** A unit does one thing. If its name needs an "and", split it. Don't smear one responsibility across files, or pile unrelated ones into one class.
+- **Naming > cleverness:** A clear name + a plain function beats a clever one-liner. Code is read far more than written.
+- **Follow the local convention** even if you'd personally do it differently. Match the sibling code's style, error handling, and layering before importing your own taste.
+- **Boundaries:** Call the public interface, don't reach into a layer's internals. Core/domain logic must not import IO/framework/UI. If a clean change needs to cross a boundary, say so — don't smuggle it.
 
-Self-check: Does one conceptual change land in one place? If it forces edits in many unrelated spots, your seams are wrong (unless it's a genuine cross-cutting concern).
+---
 
-## 3. Abstractions That Earn Their Keep
+## BEFORE YOU WRITE (for any non-trivial change)
 
-- **DRY is about knowledge, not text.** Two copies of the *same rule/decision* → extract immediately. Code that merely *looks* similar → leave it; premature DRY couples unrelated things.
-- Rule of three applies only to *coincidentally similar* code: wait for the third before extracting.
-- **YAGNI:** build for today's known requirements. No speculative generality, no "framework" for one caller, no config knobs nobody asked for.
-- Prefer a clear name + small function over a clever one-liner. Code is read far more than written.
+State these first. If you can't, you don't understand the change yet — go read.
 
-Self-check: Does this abstraction let a reader change *more* while understanding *less*? If they must learn the machinery first, it's the wrong abstraction.
+- **Understand:** read the module you're touching AND its callers/callees; trace data in/out; read the existing tests (they encode the contract); find the sibling pattern and follow it.
+- **Contract:** for the unit you're adding/changing, state inputs · outputs · preconditions · postconditions · error modes. Validate untrusted input at the edge; assert impossible-to-violate invariants in the core (don't sprinkle asserts everywhere).
+- **Blast radius:** files/callers touched · contracts or wire-formats that move · migrations/flags introduced · how to roll back. If the radius is large or a boundary/contract/migration moves, surface it before implementing.
 
-## 4. Design by Contract & Edges
+## TESTING (don't stop at the happy path)
 
-- State the contract before the body: inputs, outputs, preconditions, postconditions, invariants, error modes.
-- **Validate** untrusted input at the system edge (API/UI/IO). Don't re-validate the same thing in every inner function.
-- **Assert** invariants that should be impossible to violate (programmer errors) — fail fast and loud. Validation ≠ assertion: edges validate, core asserts; don't sprinkle asserts everywhere.
-- Handle expected operational errors deliberately. Don't swallow exceptions.
-- Don't break a published contract silently. A signature/behavior/wire-format change is an API change — find callers; version, deprecate with a window, or migrate them.
+- Pin the new behavior with a test; for a bug, reproduce it with a failing test *first*, then fix.
+- Test the **edges and the error modes you declared in the contract**, not just the success case.
+- Test **behavior, not implementation** — no mock-heavy tests that stay green while the behavior breaks.
+- Tests must be deterministic: no reliance on real clock, random, network, or ordering.
+- Hard to test = too coupled. Fix the design (inject deps, isolate IO, separate pure logic), not the test.
 
-Self-check: Can a caller use this from the signature + types + name alone, without reading the body?
+## DEPENDENCIES & OBSERVABILITY
 
-## 5. Testable, Observable, Evolvable
+- **Don't add a dependency for something trivial.** Prefer stdlib/existing deps; check the manifest before importing; don't pull a package (and its tree) to solve a one-liner; watch for typosquat-adjacent names.
+- Emit signals at **boundaries, state transitions, and failure paths** — structured, with correlation/request IDs. Not inside hot loops, not on the happy path of pure functions.
 
-- If something is hard to test, the design is usually too coupled — inject dependencies, isolate side-effects, separate pure logic from IO. Fix the design, not the test. (Exception: difficulty intrinsic to the domain — real concurrency, time, external IO.)
-- Pin the behavior you implement, or reproduce the bug with a failing test *first*, then fix.
-- Emit observability where it matters: structured logs + correlation/request IDs at boundaries and failure paths; right log levels; **never log secrets or PII**. Not noise everywhere.
-- Keep config out of logic; name constants; leave seams for the next edit.
+---
 
-Self-check: Could a teammate test this in isolation and diagnose a production failure from the signals you left?
+## DELIVERY GATE — must pass before you report "done"
 
-## 6. Bounded Blast Radius
-
-- The diff size should match the request size. Touch only what the change requires.
-- Don't opportunistically refactor/reformat/"improve" unrelated code in the same change — note it separately.
-- A refactor and a feature don't share one commit. One logical change per commit; message says *why*, not just *what*.
-- Before a wide change, state the impact surface (files/modules, callers, contracts that move) and confirm if it's large.
-- After changing a contract, follow every caller. Don't leave half-migrated state.
-
-Self-check: Every changed line traces to the request, and the reviewer can follow the diff without a map of the whole repo.
-
-## 7. Large-System Hazards (where LLMs ship the most bugs)
-
-- **Concurrency & ordering:** name the transaction boundary. Guard shared state. Assume requests race, retries duplicate, and messages arrive out of order.
-- **Idempotency:** any retried/at-least-once operation (payments, webhooks, jobs) needs an idempotency key or a natural unique constraint. "Exactly once" is a lie at the wire level.
-- **Data migrations:** schema changes are expand → migrate → contract across releases. **Never drop/rename a column in the same release as the code that stops using it.** Plan backward-compatible reads.
-- **Backward compatibility:** additive changes for live APIs/events; gate risky behavior behind a feature flag; remove only after the deprecation window.
-- **Failure design:** every remote call has a timeout + a defined behavior on partial failure (retry-with-backoff, fallback, or fail closed). Don't assume the network/dependency succeeds.
-- **Performance budget:** know the Big-O and the hot path. No N+1 queries, no unbounded fetch/allocation in a loop, bound payload sizes.
-- **Security edges:** authenticate and **authorize at the boundary** (not just validate shape). Parameterize queries; escape at sinks; keep secrets out of code and logs; treat all external input as hostile.
-
-Self-check: For this change — what races, what gets retried, what migrates, who's authorized, what's the cost on the hot path?
-
-## Operating Loop (non-trivial changes)
+Output this checklist filled in. A failed item means you are **not done** — fix it, don't report success.
 
 ```
-1. Understand → layer, convention, callers, existing tests
-2. Design     → contract + seam + blast radius + §7 hazards; pick the simplest fit
-3. Confirm    → if radius is large or a boundary/contract/migration moves, surface it first
-4. Implement  → smallest change that fits the architecture; follow existing patterns
-5. Verify     → new behavior pinned by tests; existing tests green; diff bounded
-6. Self-review→ run the self-checks; if one fails, fix the design, not the symptom
+□ Contract declared and matches the implementation
+□ New behavior + declared error modes covered by tests
+□ Tests actually run — output/summary attached (not "should pass")
+□ No API/import/config/constant used unverified (or marked [UNVERIFIED])
+□ No RED LINE crossed
+□ Blast radius stated; every changed line traces to the request
+□ Handoff note: what changed · why · what you verified · risks · what you deliberately did NOT do
 ```
+
+**Loop:** Understand → Contract + Blast radius → (confirm if large) → Implement (simplest fit, follow local convention) → Test edges & errors → Delivery gate.
