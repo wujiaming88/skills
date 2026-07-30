@@ -1,6 +1,6 @@
 ---
 name: software-engineering-discipline
-description: "Engineering discipline for AI coding agents. Apply when writing, refactoring, or reviewing code that will be maintained. Not a tutorial on SOLID/DRY (you already know those) — it calibrates the trade-off calls and hard limits where agents predictably go wrong, and forces you to verify instead of guess."
+description: "Engineering discipline for AI coding agents working on maintained code. Apply when implementing features, fixing bugs, refactoring, reviewing code, or designing and evaluating tests or coverage. Calibrates scope, abstraction, contracts, risk-based test strategy, and hard safety limits; requires verified APIs and executed checks instead of guesses."
 ---
 
 # Software Engineering Discipline
@@ -9,8 +9,7 @@ You already know SOLID, DRY, YAGNI, design-by-contract, Clean Architecture. This
 
 **Prime directive:** Leave the codebase more coherent than you found it, and write code a top engineer would sign off on — clear, cohesive, correctly scoped. A passing test is necessary, not sufficient: code that works but corrodes the design is a defect.
 
-**Apply to:** any code that will be read or maintained again.
-**Relax (not the RED LINES) for:** genuine throwaway — a scratch script, a spike you will delete, a one-off you won't commit. Size is not the test; *"will anyone maintain this?"* is.
+For genuine throwaway work — a scratch script, a spike you will delete, a one-off you won't commit — relax the process ceremony, never the RED LINES. Size is not the test; *"will anyone maintain this?"* is.
 
 ---
 
@@ -21,7 +20,7 @@ Do not size-gate these. A 5-line migration or 10-line auth change is exactly whe
 1. **Verify before you use it.** Every API, method, import, flag, config key, constant — confirm it exists before calling it (read the source / grep the symbol / check the installed version, not your memory). Never present a guess as fact. If you *genuinely cannot* verify (e.g. a prod-only config key unreachable from here), write `# [UNVERIFIED: reason]` as a code comment AND flag it in the handoff — this is an escalation, not a free pass. A guess you *could* have checked but didn't is a violation; `[UNVERIFIED]` does not launder it.
 2. **Never break a published contract silently.** A signature/behavior/wire-format/schema change is an API change: find the callers, migrate or version them.
 3. **Migrations are expand → migrate → contract.** Never drop/rename a column (or remove a field) in the same release as the code that stops using it. Reads stay backward-compatible.
-4. **Never weaken or delete a test to make it pass.** If a test fails, fix the code or fix the test's *correctness* — never gut the assertion.
+4. **Never weaken the test signal to make it pass.** Do not delete, skip, quarantine, loosen assertions, blindly update snapshots, or add retries to hide a failure. Fix the code or the test's *correctness*. Never claim an unexecuted check passed. For a bug, capture the failing regression first and retain it.
 5. **Never swallow an error into a silent default.** No `except: return None` / empty `catch {}`. Handle it, or let it propagate with context.
 6. **Secrets/PII never touch code or logs.** Read from the existing secret/config mechanism; never hardcode (incl. tests/fixtures), never commit `.env`, redact in errors.
 7. **Authorize at the boundary — not just validate shape.** Parameterize queries; treat all external input as hostile.
@@ -34,7 +33,7 @@ Do not size-gate these. A 5-line migration or 10-line auth change is exactly whe
 
 You default to *too much structure*. These pull you back. When unsure, pick the simpler option. **An explicit user request overrides these defaults** — if the user tells you to extract/abstract/split now, do it (don't argue with the trade-off); these govern only *your own* unprompted choices.
 
-- **Abstraction:** Introduce an interface/base class **only when ≥2 real implementations exist now, or a test seam genuinely needs it.** One implementation → concrete class. Building a "framework" for one caller is the defect, not good design.
+- **Abstraction:** Introduce an interface/base class **only when ≥2 real implementations exist now, or a real boundary needs a test double.** One implementation → concrete class. Do not create a framework or a new abstraction only to raise coverage.
 - **Branch vs. polymorphism:** A plain `if` is usually correct. Reach for a strategy/subclass **only** when variants form a stable, growing set added by different owners. Unsure → `if`.
 - **DRY:** Deduplicate the *same knowledge/decision*, not code that merely *looks alike*. Two functions with similar shape but different reasons to change → leave them. Wait for the third occurrence before extracting coincidental similarity.
 - **Cohesion:** A unit does one thing. If its name needs an "and", split it. Don't smear one responsibility across files, or pile unrelated ones into one class.
@@ -51,14 +50,33 @@ State these first. If you can't, you don't understand the change yet — go read
 - **Understand:** read the module you're touching AND its callers/callees; trace data in/out; read the existing tests (they encode the contract); find the sibling pattern and follow it.
 - **Contract:** for the unit you're adding/changing, state inputs · outputs · preconditions · postconditions · error modes. Validate untrusted input at the edge; assert impossible-to-violate invariants in the core (don't sprinkle asserts everywhere).
 - **Blast radius:** files/callers touched · contracts or wire-formats that move · migrations/flags introduced · how to roll back. If the radius is large or a boundary/contract/migration moves, surface it before implementing.
+- **Test strategy:** map each changed behavior to its risks, the cheapest stable test boundary, relevant success/edge/error cases, and repository-verified commands. Reuse existing tests when they already prove the behavior.
 
-## TESTING (don't stop at the happy path)
+## TESTING — prove the change, not the checkbox
 
-- Pin the new behavior with a test; for a bug, reproduce it with a failing test *first*, then fix.
-- Test the **edges and the error modes you declared in the contract**, not just the success case.
-- Test **behavior, not implementation** — no mock-heavy tests that stay green while the behavior breaks.
-- Tests must be deterministic: no reliance on real clock, random, network, or ordering.
-- Hard to test = too coupled. Fix the design (inject deps, isolate IO, separate pure logic), not the test.
+Use **Contract → Risk → Test boundary → Cases → Evidence**:
+1. **Contract:** state the observable behavior, not the implementation detail.
+2. **Risk:** identify what this change can break and the cost of missing it.
+3. **Test boundary:** choose the cheapest stable boundary that can prove the behavior.
+4. **Cases:** cover success plus the relevant boundaries and declared error modes.
+5. **Evidence:** run the checks and report exactly what their scope proves.
+
+Choose the smallest reliable test portfolio:
+- **Unit:** pure logic, business rules, and state transitions.
+- **Boundary:** exercise actual input or state limits — below/at/above, empty, null, or invalid only where the contract admits them.
+- **Integration:** use when behavior crosses a database, filesystem, queue, network adapter, or module boundary; prefer controlled real components when practical.
+- **Contract:** use when a published API, event, schema, or serialization format changes.
+- **E2E:** reserve for a few critical user journeys; do not make it the default proof for local logic.
+
+Apply these quality rules:
+- For a bug, observe the regression test fail before the fix and pass after it. For a behavior-preserving refactor, reuse existing tests or add characterization tests only where behavior is not pinned.
+- Assert public behavior, state, and side effects. Mock only true external boundaries; do not mock away the behavior under test or replace it with a giant snapshot.
+- Control clocks, randomness, network, global state, and ordering. Treat flaky tests as defects; never hide them with retries.
+- Honor existing line/branch coverage gates and never lower them. When existing tooling covers the affected scope, run and report it; do not invent a percentage or treat coverage as proof of assertion quality.
+- Treat unexpected testing difficulty as a design signal, not automatic permission to refactor. Make only the smallest seam the requested behavior genuinely needs.
+- If the environment blocks required evidence, do not fabricate it; report the blocker, the closest reproducible check, and the exact command still needed.
+
+Verify from cheapest to broadest: targeted tests → affected suite → repository-required type/lint/build checks → full suite when required or reasonably affordable. Discover commands from the repository; never guess them.
 
 ## DEPENDENCIES & OBSERVABILITY
 
@@ -69,12 +87,14 @@ State these first. If you can't, you don't understand the change yet — go read
 
 ## DELIVERY GATE — must pass before you report "done"
 
-Output this checklist filled in. A failed item means you are **not done** — fix it, don't report success.
+Run this gate before reporting "done". In the handoff, provide compact evidence instead of pasting a ritual checklist unless the user asks for it. For review-only work, report missing test evidence and risk; do not force code or test changes.
 
 ```
 □ Contract declared and matches the implementation
-□ New behavior + declared error modes covered by tests
-□ Tests actually run — output/summary attached, and it names the error-mode cases (not just "14 passed", not "should pass")
+□ Changed behavior mapped to the smallest reliable tests; relevant boundaries and declared error modes covered
+□ If applicable: bug regression observed red→green; refactor behavior pinned by existing or characterization tests
+□ Exact commands run; results distinguish targeted, affected-suite, and full-suite scope and name the new cases
+□ Existing coverage gates honored; affected coverage reported when repository tooling exists
 □ Every API/import/config/constant was verified — NOT ticked by slapping [UNVERIFIED] on a guess. An **un-escalated** unverified RED-LINE-#1 symbol = NOT done. A genuinely un-checkable item is allowed only as [UNVERIFIED] + ⚠ + escalation in the handoff
 □ If the environment blocked running tests/migrations (no net/DB/sandbox): do NOT tick "tests ran" — mark it ⚠, state exactly what you couldn't run and why, and hand off the exact command for the user to run
 □ No RED LINE crossed
