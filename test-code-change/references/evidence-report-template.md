@@ -1,83 +1,122 @@
 # Change Test Evidence
 
-Use this template for substantial implementation or review work. Omit empty sections and keep the user-facing summary concise.
+Use this template for every maintained-code implementation or review. Keep small-change entries compact, but retain enough evidence to audit every Gate and Risk ID.
+
+## Contents
+
+- [Gate Status](#gate-status)
+- [Change Basis](#change-basis)
+- [Observable Contracts](#observable-contracts)
+- [Change Impact Traceability](#change-impact-traceability)
+- [Test Portfolio Traceability](#test-portfolio-traceability)
+- [Baseline Evidence](#baseline-evidence)
+- [Execution Result](#execution-result)
+- [Coverage and Oracle Quality](#coverage-and-oracle-quality)
+- [Cross-Boundary and Non-Functional Evidence](#cross-boundary-and-non-functional-evidence)
+- [Residual Risk](#residual-risk)
+- [Handoff](#handoff)
+
+## Gate Status
+
+| Gate | Status | Evidence or blocking reason |
+|---|---|---|
+| Change Basis |  |  |
+| Contract |  |  |
+| Impact |  |  |
+| Portfolio |  |  |
+| Baseline |  |  |
+| Execution |  |  |
+| Evaluation |  |  |
+| Handoff |  |  |
+
+Use `PASS` only when the Gate pass condition is met. Otherwise use `BLOCKED`.
 
 ## Change Basis
 
-- **Mode:** implementation / review / blocked
 - **Request and acceptance criteria:**
-- **Comparison base and inspected diff:**
-- **Repository instructions and commands discovered:**
-- **Pre-existing failures or unrelated changes:**
+- **Comparison base and inspected scope:**
+- **Staged, unstaged, and untracked changes:**
+- **Repository commands:**
+- **Environment constraints:**
+- **Pre-existing failures or unrelated work:**
 
 ## Observable Contracts
 
-| ID | Changed behavior | Inputs and preconditions | Outputs, state, and side effects | Error modes |
-|---|---|---|---|---|
-
-## Impact and Risk
-
-| Risk ID | Failure mode and evidence | Affected surface | Inherent level | Required response |
-|---|---|---|---|---|
-
-Record unknown callers, environments, contracts, and assumptions as explicit risks.
-
-## Test Design
-
-| Risk ID | Boundary | Method | Cases | Oracle | Expected evidence |
+| Change ID | Old behavior | New behavior | Inputs/outputs/state | Side effects | Error modes |
 |---|---|---|---|---|---|
 
-Explain why omitted test types do not fit the identified failure modes. Do not list every possible method.
+## Change Impact Traceability
 
-## TDD or Baseline Trace
+| Change ID | Changed contract | Affected surface | Repository evidence | Failure mode | Risk |
+|---|---|---|---|---|---|
 
-- **RED or characterization evidence:**
-- **GREEN evidence:**
-- **Refactor or triangulation evidence:**
+Assign a stable Risk ID and level in every material `Risk` cell.
 
-Use `N/A` with a reason when test-first development does not fit the change.
+## Test Portfolio Traceability
 
-## Executed Evidence
+| Risk ID | Boundary | Method | Cases | Oracle | Evidence | Status |
+|---|---|---|---|---|---|---|
 
-| Scope | Exact command | Result | What it proves |
-|---|---|---|---|
-| Targeted |  |  |  |
-| Affected suite |  |  |  |
-| Integration or contract |  |  |  |
-| Type, lint, build, static |  |  |  |
-| Full suite |  |  |  |
+Every Risk ID must end as exactly one of:
 
-Never place an unexecuted recommendation in this table as a passing result.
+- `VERIFIED`
+- `NO-TEST-RATIONALE`
+- `BLOCKED`
+
+Do not declare sufficient verification while a Risk ID has no final status or any High/Critical risk is `BLOCKED`.
+
+## Baseline Evidence
+
+- **Observed RED and GREEN:**
+- **Characterization or comparison-base evidence:**
+- **Alternative mechanism proof:** prior failure / mutation / fault injection / differential / other
+- **Missing direct RED observation and residual uncertainty:**
+
+Use the strongest available baseline evidence. Do not write `N/A` without explaining why direct evidence is unavailable.
+
+## Execution Result
+
+| Command | Collected | Executed | Passed | Failed | Skipped | What it proves |
+|---|---|---|---|---|---|---|
+
+Record deselected cases, retries, flakes, timeouts, and environment failures. Never report a recommended or unexecuted command as passing evidence.
 
 ## Coverage and Oracle Quality
 
-- **Repository gate:**
+- **Repository coverage gate:**
 - **Changed executable lines and branches:**
 - **Material uncovered changes and rationale:**
-- **Mutation, differential, property, or fault evidence:**
-- **Oracle quality concerns:**
+- **Would plausible defect reintroduction fail the test?:**
+- **Mutation, differential, property, fault, performance, or security evidence:**
+- **Unexplained skips or oracle concerns:**
 
-## Failure Handling and Observability
+## Cross-Boundary and Non-Functional Evidence
 
-- **Errors and partial failure:**
-- **Timeout, retry, idempotency, concurrency, and cleanup:**
-- **Logs, metrics, traces, and sensitive-data checks:**
+- **Consumers, contracts, data, and external IO:**
+- **Errors, timeout, retry, idempotency, concurrency, and cleanup:**
+- **Latency, throughput, capacity, and resource use:**
+- **Authorization, abuse resistance, and sensitive-data checks:**
+- **Logs, metrics, traces, and alerts:**
 
-Use `Not impacted` only after checking the impact map.
+Use `Not impacted` only after the Impact Gate has evidence for excluding the surface.
 
 ## Residual Risk
 
-| Risk ID | Executed controls | Residual level | Remaining uncertainty or follow-up |
-|---|---|---|---|
+| Risk ID | Inherent level | Executed evidence or control | Residual level | Downgrade evidence | Remaining uncertainty |
+|---|---|---|---|---|---|
+
+Never lower the Impact dimension because tests pass. Cite concrete executed evidence for every residual-risk downgrade.
 
 ## Handoff
 
 Summarize:
 
-1. what behavior changed
-2. which tests and checks actually ran
-3. what the evidence covers
-4. what was not run and why
-5. the remaining risk
+1. inspected change and discovered impacts
+2. final status for every Risk ID
+3. exact evidence executed and what it proves
+4. unresolved test gaps and blocking reasons
+5. residual risk and missing environments
 
-Bound the conclusion to the discovered impact map and executed environment. Do not claim absolute completeness.
+Bound the conclusion to the inspected change, discovered impact map, executed environment, and observed evidence.
+
+Final judgment: there is no known impact left undiscovered and no testing gap left unexplained.

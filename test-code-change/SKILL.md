@@ -1,136 +1,108 @@
 ---
 name: test-code-change
-description: "Risk-driven test design and verification for coding agents changing maintained code. Use when implementing, fixing, refactoring, deleting, migrating, or reviewing code to identify affected behavior, select sufficient scientific test methods, apply TDD where useful, execute affected regressions, evaluate changed-line and branch coverage, and report reproducible evidence and residual risk."
+description: "Mandatory risk-driven verification workflow for maintained-code changes. Use when implementing, fixing, refactoring, deleting, migrating, or reviewing code to identify all materially affected behavior, map failure risks to sufficient tests, execute required evidence, and report unresolved test gaps and residual risk."
 ---
 
-# Test Code Change
+# Verify Code Changes
 
-Prove a code change with the smallest test portfolio that can reliably expose its important failures. Optimize for defect detection and trustworthy evidence, not test count, ritual, or a coverage number.
+Maximize confidence in code changes by identifying every materially affected behavior and requiring risk-proportionate evidence capable of exposing its important failure modes.
 
-Operate independently. Accept an existing contract, impact analysis, or test plan when available, but verify it against the repository. Derive any missing artifact from the request, diff, code, callers, tests, and project instructions.
+For every material impact, assign exactly one final status:
 
-## Operating Modes
+- `VERIFIED`: sufficient evidence was executed and observed.
+- `NO-TEST-RATIONALE`: testing is unnecessary or impossible for a stated reason.
+- `BLOCKED`: required evidence could not be obtained.
 
-Choose the mode implied by the request:
+Do not declare verification sufficient while any material impact has no status, or any High/Critical risk remains `BLOCKED`.
 
-- **Implementation:** design tests, observe the required failures, change code, and execute verification.
-- **Review:** inspect the change and existing evidence without editing; report concrete gaps and risks.
-- **Blocked:** complete the analysis possible from source, identify missing evidence, and provide the exact discovered commands that remain to run.
+Operate independently. Accept an existing contract, impact analysis, or test plan when available, but verify it against the repository. Never claim that an unexecuted test passed.
 
-Never claim that an unexecuted test passed. Never change production code in review mode.
+Render all eight Gate statuses and both mandatory traceability tables for every maintained-code change. Keep small-change entries compact, but do not replace them with prose, renamed checks, or a summary table.
 
-## Workflow
+## Mandatory Workflow
 
-### 1. Establish the Change Basis
+### Gate 1: Establish the Change Basis
 
-Inspect the repository instructions, status, diff, comparison base, relevant implementation, callers, callees, tests, manifests, and CI configuration. Discover test and coverage commands from the repository; do not guess them.
+Inspect repository instructions, comparison base, staged, unstaged and untracked changes, affected manifests, CI configuration, and discovered verification commands. Separate unrelated work and pre-existing failures.
 
-Separate pre-existing failures and unrelated work from change-caused evidence. Classify each meaningful change as one or more of:
+**Required output:** comparison base, inspected change scope, repository commands, environment constraints, and unrelated work.
 
-- added behavior
-- modified behavior
-- deleted behavior
-- bug fix
-- behavior-preserving refactor
-- public contract or schema change
-- migration or external-side-effect change
+**Pass condition:** the complete intended change is represented in the inspected scope.
 
-State the observable contract: inputs, outputs, preconditions, postconditions, state transitions, side effects, and declared error modes. Resolve material ambiguity before treating the test plan as complete.
+### Gate 2: Define the Contract
 
-### 2. Build the Impact Map
+Classify additions, modifications, deletions, bug fixes, behavior-preserving refactors, contract changes, migrations, and dependency upgrades. State old and new behavior where applicable, including inputs, outputs, preconditions, postconditions, state transitions, side effects, and error modes.
 
-Trace changed symbols to direct callers, downstream dependencies, tests, and externally observable behavior. Include relevant indirect surfaces:
+**Required output:** changed contracts with old/new behavior, inputs, outputs, state, side effects, and errors.
 
-- public APIs, events, serialization, schemas, configuration, and CLI behavior
-- persisted data, migrations, caches, queues, files, and remote services
-- authorization, validation, secrets, and sensitive logging
-- time, retries, idempotency, concurrency, ordering, and resource cleanup
-- error propagation, fallback behavior, logs, metrics, and traces
+**Pass condition:** every semantic change has an explicit observable contract.
 
-Express each risk as:
+### Gate 3: Map Impact and Risk
 
-> Because of **change**, **failure mode** may affect **surface**, supported by **repository evidence**.
+Trace changed symbols to callers, consumers, dependencies, tests, public contracts, data, external effects, security boundaries, performance, capacity, resources, and observability. Read [impact-analysis.md](references/impact-analysis.md) and record every material impact in the mandatory table:
 
-Read [impact-analysis.md](references/impact-analysis.md) for the change-type probes, risk rubric, escalation rules, and residual-risk model. Do not rate risk from line count or intuition.
-
-### 3. Design the Test Portfolio
-
-For every material risk, record:
-
-| Contract or risk | Test boundary | Method | Cases | Oracle | Expected evidence |
+| Change ID | Changed contract | Affected surface | Repository evidence | Failure mode | Risk |
 |---|---|---|---|---|---|
 
-Choose the cheapest stable boundary that can observe the failure. Select methods from [test-method-selection.md](references/test-method-selection.md); do not mechanically require every test type.
+Assign a stable Risk ID and level in the `Risk` cell for each distinct failure mode. Split impacts that require different evidence.
 
-Define each test as a reproducible experiment:
+**Required output:** callers, consumers, boundaries, failure modes, repository evidence, and calibrated risk levels.
 
-- **Hypothesis:** the observable behavior or invariant being tested.
-- **Setup and controls:** the state, fixtures, clock, randomness, and external boundaries.
-- **Stimulus:** the action or input.
-- **Oracle:** the exact result, state, side effect, error, or signal that distinguishes success from failure.
+**Pass condition:** every changed contract has an impact record, and every material failure mode has a Risk ID.
 
-Cover the relevant success path, boundaries, state transitions, and declared failures. Exclude impossible or contract-invalid cases unless validating rejection is itself required behavior.
+### Gate 4: Design the Test Portfolio
 
-### 4. Apply the TDD Micro-Cycle Where It Adds Signal
+Select the cheapest stable boundary capable of exposing each failure mode. Read [test-method-selection.md](references/test-method-selection.md) and maintain the mandatory table:
 
-Use `RED -> GREEN -> REFACTOR -> TRIANGULATE`:
+| Risk ID | Boundary | Method | Cases | Oracle | Evidence | Status |
+|---|---|---|---|---|---|---|
 
-1. **RED:** make the next behavior fail for the intended reason, not because of syntax, fixture, or environment failure.
-2. **GREEN:** implement the smallest behavior that satisfies the contract.
-3. **REFACTOR:** improve structure only while the relevant tests remain green.
-4. **TRIANGULATE:** add another representative, boundary, or failure example when one case could permit a false generalization.
+Define a discriminating oracle for every planned case. Do not mechanically require every test type; make the portfolio proportionate to risk.
 
-Require observed red-to-green evidence for bug fixes. For behavior-preserving refactors, establish characterization or differential evidence before restructuring. For deletions, prove consumer migration, absence of stale references, and the intended compatibility or rejection behavior.
+**Required output:** risk-to-test mapping with boundary, method, cases, oracle, expected evidence, and status.
 
-Allow an exploratory spike without test-first development only when the contract is still unknown. Do not treat spike code as production-ready evidence.
+**Pass condition:** every material Risk ID has an evidence plan or a specific `NO-TEST-RATIONALE`.
 
-### 5. Execute Evidence from Narrow to Broad
+### Gate 5: Prove the Baseline
 
-Run the cheapest useful checks first:
+For a reproducible bug fix, require observed red-to-green evidence.
 
-1. targeted tests for the changed behavior
-2. directly affected module or component suites
-3. integration, contract, and critical journey tests required by the impact map
-4. repository-required type, lint, build, and static checks
-5. the full suite when required by the repository, justified by broad risk, or reasonably affordable
+When direct RED execution is unavailable, require the strongest available alternative: prior failure evidence, comparison-base execution, mutation, fault injection, differential testing, or a mechanism-level regression proof.
 
-Do not run a broad suite as a substitute for missing targeted assertions. Do not stop after targeted tests when the impact map crosses a boundary.
+Record the missing RED observation as residual uncertainty. For behavior-preserving refactors, establish characterization or differential evidence before restructuring. For deletions, prove consumer migration and the intended absence, compatibility, or rejection behavior.
 
-### 6. Evaluate Test Quality and Coverage
+**Required output:** observed RED, characterization baseline, or strongest available mechanism-level alternative, plus any missing direct observation.
 
-Assert observable behavior, state, side effects, and error contracts. Mock only true external boundaries; do not mock away the behavior under test. Control time, randomness, network, shared state, and ordering where they affect reproducibility.
+**Pass condition:** the selected evidence can expose the target failure mechanism, and missing RED evidence is recorded as residual uncertainty.
 
-Honor existing line and branch coverage gates and never lower them. When repository tooling supports diff coverage, report changed executable lines and altered branches. Investigate every material uncovered change; either add a risk-justified test or explain why execution is unreachable or not behavior-bearing.
+### Gate 6: Execute Required Evidence
 
-Do not invent a universal percentage. Coverage proves execution, not assertion effectiveness. For high-risk logic with a weak oracle, use selective mutation, differential, property, or fault-injection testing when supported and proportionate.
+Execute the risk-proportionate portfolio using repository-discovered commands. Include targeted, affected, cross-boundary, static, build, and full-suite checks only where required by the impact map or repository policy. Record collection and execution counts; do not hide skips, deselections, flaky retries, or environment failures.
 
-Treat difficult testing as a design signal, not automatic permission for a rewrite. Introduce only the smallest boundary the requested behavior genuinely needs.
+**Required output:** exact commands, collected count, executed count, passed, failed, skipped, and observed result.
 
-### 7. Verify Failure Handling and Observability
+**Pass condition:** all required evidence was actually executed, or the affected Risk ID is marked `BLOCKED` with the exact reason.
 
-When the impact map reaches these concerns, test them explicitly:
+### Gate 7: Evaluate Sufficiency
 
-- errors preserve type, context, and actionable failure behavior instead of becoming silent defaults
-- partial failures do not leave invalid state or leaked resources
-- retries, timeouts, and duplicate delivery preserve declared invariants
-- logs and telemetry appear at the intended boundary or state transition
-- sensitive values are absent from logs, errors, snapshots, and fixtures
-- log level, correlation fields, and failure details match the repository convention
+Check oracle strength, changed-line and branch coverage where supported, affected consumers, cross-boundary behavior, error paths, performance or security evidence, and all unexplained skips or gaps. Honor repository coverage gates without inventing a universal percentage.
 
-Do not add logs or error wrappers merely to satisfy a checklist. Verify only behavior relevant to the change and its risks.
+Coverage proves execution, not assertion effectiveness. Ask whether reintroducing each plausible defect would fail the selected test.
 
-## Completion Standard
+**Required output:** coverage gaps, oracle assessment, cross-boundary evidence, unexplained omissions, and residual uncertainty.
 
-Call verification sufficient only when:
+**Pass condition:** no material coverage, oracle, consumer, boundary, or failure-path gap remains unexplained.
 
-- every changed observable contract maps to evidence or an explicit no-test rationale
-- every high or critical failure mode has direct evidence at a boundary capable of exposing it
-- affected consumers and cross-boundary behavior have the required regression coverage
-- altered conditions, executable lines, and failure paths have no unexplained material gap
-- tests can fail for the defect they claim to detect
-- actual command results are distinguished from static analysis and unexecuted recommendations
-- remaining uncertainty is recorded as residual risk
+### Gate 8: Close the Handoff
 
-Use [evidence-report-template.md](references/evidence-report-template.md) for substantial changes. Keep the user-facing handoff compact, but retain the reasoning needed to audit the conclusion.
+Use [evidence-report-template.md](references/evidence-report-template.md). Assign every Risk ID exactly one final status and distinguish executed evidence from static analysis or recommended commands.
 
-Never describe testing as absolutely complete. Bound the claim to the discovered impact map, executed environment, and observed evidence.
+Before the final response, render the eight Gate rows with their exact names, the Change Impact table, and the Test Portfolio table. Preserve Risk IDs across both tables.
+
+**Required output:** exact Gate status table, both mandatory traceability tables, Risk ID status, executed evidence, unresolved test gaps, and residual risk.
+
+**Pass condition:** all eight Gate rows and both traceability tables are present; every material impact is `VERIFIED`, has an accepted `NO-TEST-RATIONALE`, or is explicitly `BLOCKED`; no High/Critical risk remains `BLOCKED` when declaring verification sufficient.
+
+Never describe testing as absolutely complete. Bound the claim to the inspected change, discovered impact map, executed environment, and observed evidence.
+
+Final judgment: there is no known impact left undiscovered and no testing gap left unexplained.
