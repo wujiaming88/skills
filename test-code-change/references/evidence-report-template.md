@@ -13,6 +13,7 @@ Use this template for every maintained-code implementation or review. Keep small
 - [Execution Result](#execution-result)
 - [Coverage and Oracle Quality](#coverage-and-oracle-quality)
 - [Cross-Boundary and Non-Functional Evidence](#cross-boundary-and-non-functional-evidence)
+- [Frontend Verification](#frontend-verification)
 - [Residual Risk](#residual-risk)
 - [Handoff](#handoff)
 
@@ -99,6 +100,23 @@ Record deselected cases, retries, flakes, timeouts, and environment failures. Ne
 - **Logs, metrics, traces, and alerts:**
 
 Use `Not impacted` only after the Impact Gate has evidence for excluding the surface.
+
+## Frontend Verification
+
+Complete this section only when frontend behavior, presentation, accessibility, client state, or browser runtime is materially affected.
+
+- **Changed pages, components, tokens, routes, and transitive consumers:**
+- **User-visible states and data conditions:**
+- **Viewports, content boundaries, themes, locales, browsers, and input modes selected:**
+- **Behavior, interaction, visual, and accessibility oracles:**
+- **Console, network, SSR, hydration, and chunk-loading observations:**
+- **Performance, rollout, client monitoring, and rollback controls:**
+- **Untested dimensions and why they are not material or remain uncertain:**
+
+| Surface or consumer | State and data | Viewport or runtime | Method and oracle | Executed evidence | Result |
+|---|---|---|---|---|---|
+
+Do not fill the matrix with every possible combination. Include representative boundaries, interacting dimensions, critical journeys, and historical failures selected from the impact analysis. A screenshot without an authoritative expected result is an observation, not a visual-regression oracle.
 
 ## Residual Risk
 

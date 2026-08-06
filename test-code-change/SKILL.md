@@ -33,6 +33,8 @@ Inspect repository instructions, comparison base, staged, unstaged and untracked
 
 Classify additions, modifications, deletions, bug fixes, behavior-preserving refactors, contract changes, migrations, and dependency upgrades. State old and new behavior where applicable, including inputs, outputs, preconditions, postconditions, state transitions, side effects, and error modes.
 
+For frontend changes, include user-visible behavior, interaction, presentation, responsive and content behavior, accessibility, client state, and browser-runtime expectations when they are material.
+
 **Required output:** changed contracts with old/new behavior, inputs, outputs, state, side effects, and errors.
 
 **Pass condition:** every semantic change has an explicit observable contract.
@@ -40,6 +42,8 @@ Classify additions, modifications, deletions, bug fixes, behavior-preserving ref
 ### Gate 3: Map Impact and Risk
 
 Trace changed symbols to callers, consumers, dependencies, tests, public contracts, data, external effects, security boundaries, performance, capacity, resources, and observability. Read [impact-analysis.md](references/impact-analysis.md) and record every material impact in the mandatory table:
+
+For frontend changes, also read [frontend-change-verification.md](references/frontend-change-verification.md). Trace direct and transitive component consumers, design-system assets, routes, client state, supported runtime dimensions, and user-visible states. Keep this reference active through the Portfolio and Evaluation Gates.
 
 | Change ID | Changed contract | Affected surface | Repository evidence | Failure mode | Risk |
 |---|---|---|---|---|---|
@@ -58,6 +62,8 @@ Select the cheapest stable boundary capable of exposing each failure mode. Read 
 |---|---|---|---|---|---|---|
 
 Define a discriminating oracle for every planned case. Do not mechanically require every test type; make the portfolio proportionate to risk.
+
+For frontend risks, select evidence by failure mechanism. DOM tests do not prove layout, screenshots do not prove behavior, and end-to-end tests do not replace focused component or integration evidence.
 
 **Required output:** risk-to-test mapping with boundary, method, cases, oracle, expected evidence, and status.
 
@@ -86,6 +92,8 @@ Execute the risk-proportionate portfolio using repository-discovered commands. I
 ### Gate 7: Evaluate Sufficiency
 
 Check oracle strength, changed-line and branch coverage where supported, affected consumers, cross-boundary behavior, error paths, performance or security evidence, and all unexplained skips or gaps. Honor repository coverage gates without inventing a universal percentage.
+
+For frontend impacts, evaluate the selected state and runtime matrix, visual and interaction evidence, accessibility, console or hydration failures, content stress, and any untested browser, viewport, theme, locale, or input-mode uncertainty.
 
 Coverage proves execution, not assertion effectiveness. Ask whether reintroducing each plausible defect would fail the selected test.
 

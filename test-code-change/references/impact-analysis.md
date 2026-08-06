@@ -56,6 +56,13 @@ Use this reference to build the mandatory impact table and assign a risk level t
 - Identify changed defaults, APIs, data formats, performance, security posture, and platform support.
 - Exercise the owned integration boundary instead of relying only on dependency tests.
 
+### Frontend or UI Change
+
+- Classify the changed surface: leaf page, shared component, design token or global style, route, client store or cache, API adapter, browser API, SSR or hydration path, or build asset.
+- Trace direct consumers, transitive consumers, variants, states, themes, supported viewports, content shapes, locales, browsers, and input modes only where the change can affect them.
+- Separate business, state, interaction, presentation, responsive, accessibility, integration, performance, and security contracts. A visual-only diff can still hide a primary action or make a workflow unusable.
+- Verify routes, permissions, server enforcement, schemas, and data flows independently. Rendering or hiding a control is not evidence that authorization is correct.
+
 ## Impact Map
 
 Inspect each category before excluding it:
@@ -64,6 +71,9 @@ Inspect each category before excluding it:
 |---|---|
 | Code | definitions, callers, callees, implementations, exports |
 | Behavior | user journeys, state transitions, business rules |
+| Presentation | DOM, CSS, shared components, design tokens, themes, responsive layout, stacking, overflow, content stress |
+| Accessibility | semantics, accessible names, keyboard and focus, contrast, non-color cues, reduced motion, zoom |
+| Client runtime | router, store, cache, service worker, SSR, hydration, chunks, browser APIs, supported platforms |
 | Contracts | API, CLI, event, schema, serialization, configuration |
 | Data | persistence, migrations, cache, queue, file formats |
 | Effects | network, filesystem, process, notification, billing |
@@ -94,6 +104,8 @@ Assess four dimensions:
 | Exposure | rare internal path | limited module or cohort | common path or many consumers | default/public path at broad scale |
 | Change hazard | mechanical and checked | simple branch or validation | state, IO, compatibility | concurrency, migration, auth, distributed effects |
 | Detection and recovery difficulty | immediate and reversible | stable detection or rollback | delayed, partial, or costly | silent, irreversible, or hard to diagnose |
+
+For frontend changes, calibrate exposure from the affected consumer graph rather than changed-line count. A one-line shared token or component change may have broad exposure. Treat an obscured primary action, broken critical viewport, inaccessible workflow, leaked sensitive data, or client-only authorization as behavior or safety impact, not cosmetic impact. Raise uncertainty when supported states, consumers, browsers, themes, locales, or content boundaries are unknown.
 
 ## Risk Classification
 
