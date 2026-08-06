@@ -7,6 +7,7 @@ Choose methods from the failure model and observable contract. Prefer the smalle
 - [Define a Valid Test](#define-a-valid-test)
 - [Choose the Test Boundary](#choose-the-test-boundary)
 - [Choose the Design Method](#choose-the-design-method)
+- [Apply Frontend Methods Deliberately](#apply-frontend-methods-deliberately)
 - [Use Test Doubles Safely](#use-test-doubles-safely)
 - [Apply TDD Deliberately](#apply-tdd-deliberately)
 - [Design Cases Efficiently](#design-cases-efficiently)
@@ -29,7 +30,8 @@ A test without a discriminating oracle is execution, not proof.
 | Boundary | Use when |
 |---|---|
 | Unit | pure rules, transformations, calculations, state transitions |
-| Component | behavior spans collaborating units inside one owned boundary |
+| Component | owned UI semantics, events, and state where real layout is not the failure mechanism |
+| Browser component | CSS, layout, focus, browser APIs, rendering, or hydration must be real |
 | Integration | database, filesystem, queue, network adapter, framework, or module contract matters |
 | Contract | producer/consumer API, event, schema, serialization, or compatibility changes |
 | End-to-end | a small number of critical journeys need whole-system confidence |
@@ -59,9 +61,25 @@ Use the cheapest boundary that contains the failure mechanism. Do not replace a 
 | abuse, rate limits, or hostile workflows | adversarial and misuse-case testing | verify rejection, throttling, isolation, and bounded cost |
 | sensitive data exposure | log, error, fixture, snapshot, and response inspection | prove secrets and personal data do not escape |
 | dependency or runtime upgrade | compatibility, contract, and owned-boundary integration | exercise changed defaults and supported environments |
+| UI semantics, events, or state | component behavior testing | assert roles, names, state, emitted effects, and user-observable behavior |
+| visual or layout regression | real-browser visual regression | compare approved states and viewports with a discriminating visual oracle |
+| responsive or content-stress failure | viewport boundary and content-stress testing | exercise below, at, and above material breakpoints with representative extremes |
+| keyboard, focus, or accessibility regression | automated accessibility plus keyboard/focus testing | combine machine-detectable rules with actual interaction order and feedback |
+| async UI, cache, or optimistic update | state-transition and controlled-server integration | cover loading, stale, success, error, rollback, duplicate, and out-of-order outcomes |
+| routing or navigation | router integration or critical-journey end-to-end | cover deep links, history, redirects, guards, and preserved state where material |
+| SSR, hydration, chunk, or browser-runtime failure | build plus real-browser integration or differential testing | inspect rendered output, console, network, and supported runtimes |
+| bundle or interaction performance | bundle budget, controlled benchmark, or Web Vitals regression | compare a representative baseline under controlled conditions |
 | critical user outcome | end-to-end scenario | keep few, stable, and behavior-focused |
 
 Do not apply every method. Select a method only when its failure model exists in the impact table.
+
+## Apply Frontend Methods Deliberately
+
+Read [frontend-change-verification.md](frontend-change-verification.md) when presentation, interaction, responsive behavior, accessibility, client state, or browser runtime is affected.
+
+Choose a representative state and runtime matrix from repository support and the impact graph. Do not require every browser, viewport, theme, locale, or state for every change, and do not collapse material dimensions into one happy-path screenshot.
+
+Use DOM or component assertions for semantics and behavior, and real-browser evidence for browser-dependent mechanisms. Use visual baselines only when the expected appearance is authoritative and deterministic. Never update a baseline merely to remove a diff.
 
 ## Use Test Doubles Safely
 
