@@ -22,6 +22,8 @@ The minimum request body is:
 
 `CUSTOM_IMAGE_API_BASE_URL` should normally end in `/openai/v1`. A full URL ending in `/images/generations` or `/images/edits` is normalized back to its API root. Only `http` and `https` URLs are allowed.
 
+Prefer HTTPS. With an `http://` base URL, the Bearer API key is not protected by transport encryption. Limit HTTP to trusted local or test networks and rotate any key used over an untrusted path.
+
 ## Required edit request
 
 The CLI uses the official OpenAI Python SDK to send multipart form data to:

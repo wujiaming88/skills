@@ -28,6 +28,8 @@ export CUSTOM_IMAGE_MODEL="provider-image-model"
 
 Never ask the user to paste the full key into chat. Never pass it on the command line or print it. `CUSTOM_IMAGE_API_BASE_URL` may also contain a full `/images/generations` or `/images/edits` endpoint; the CLI normalizes it to the API root.
 
+Prefer HTTPS. An `http://` base URL sends the Bearer API key without transport encryption; use it only on a trusted local or test network and rotate the key after exposure.
+
 Live calls require the official Python SDK:
 
 ```bash
