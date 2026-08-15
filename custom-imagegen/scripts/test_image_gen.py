@@ -16,6 +16,7 @@ from typing import Any, ClassVar
 import unittest
 
 SCRIPT = Path(__file__).with_name("image_gen.py")
+LIVE_SMOKE_SCRIPT = Path(__file__).with_name("live_smoke_test.py")
 PNG_BYTES = b"\x89PNG\r\n\x1a\ncontract-test"
 
 
@@ -88,10 +89,15 @@ class CustomImageCliTest(unittest.TestCase):
             "data": [{"b64_json": base64.b64encode(PNG_BYTES).decode("ascii")}],
         }
 
-    def _run(self, *args: str, include_key: bool = True) -> subprocess.CompletedProcess[str]:
+    def _run(
+        self,
+        *args: str,
+        include_key: bool = True,
+        model: str = "test-image-model",
+    ) -> subprocess.CompletedProcess[str]:
         env = os.environ.copy()
         env["CUSTOM_IMAGE_API_BASE_URL"] = self.base_url
-        env["CUSTOM_IMAGE_MODEL"] = "test-image-model"
+        env["CUSTOM_IMAGE_MODEL"] = model
         if include_key:
             env["CUSTOM_IMAGE_API_KEY"] = "secret-contract-key"
         else:
@@ -229,6 +235,120 @@ class CustomImageCliTest(unittest.TestCase):
 
         self.assertEqual(result.returncode, 1)
         self.assertIn("at most 16", result.stderr)
+        self.assertEqual(FakeImageHandler.requests, [])
+
+    def test_gpt_image_2_accepts_valid_sizes(self) -> None:
+        for size in ("auto", "1024x640", "3072x1024", "3840x2160"):
+            with self.subTest(size=size):
+                result = self._run(
+                    "generate",
+                    "--prompt",
+                    "fixed size",
+                    "--size",
+                    size,
+                    "--dry-run",
+                    model="azure/gpt-image-2",
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(result.stdout)["size"], size)
+
+    def test_gpt_image_2_omits_size_when_unspecified(self) -> None:
+        result = self._run(
+            "generate",
+            "--prompt",
+            "automatic size",
+            "--dry-run",
+            model="azure/gpt-image-2",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("size", json.loads(result.stdout))
+
+    def test_gpt_image_2_rejects_invalid_sizes_before_request(self) -> None:
+        invalid_sizes = ("1024", "1025x1024", "3856x1024", "3088x1024", "800x800", "3840x3840")
+        for size in invalid_sizes:
+            with self.subTest(size=size):
+                result = self._run(
+                    "generate",
+                    "--prompt",
+                    "invalid size",
+                    "--size",
+                    size,
+                    "--dry-run",
+                    model="azure/gpt-image-2",
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("size", result.stderr.lower())
+                self.assertEqual(FakeImageHandler.requests, [])
+
+    def test_custom_model_keeps_provider_specific_size_pass_through(self) -> None:
+        result = self._run(
+            "generate",
+            "--prompt",
+            "provider size",
+            "--size",
+            "square",
+            "--dry-run",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["size"], "square")
+
+    def test_extra_json_cannot_override_declared_request_options(self) -> None:
+        result = self._run(
+            "generate",
+            "--prompt",
+            "invalid override",
+            "--extra-json",
+            '{"size":"800x800"}',
+            "--dry-run",
+            model="azure/gpt-image-2",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("reserved fields: size", result.stderr)
+        self.assertEqual(FakeImageHandler.requests, [])
+
+    def test_gpt_image_2_rejects_unsupported_input_fidelity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "input.png"
+            image.write_bytes(PNG_BYTES)
+            result = self._run(
+                "edit",
+                "--image",
+                str(image),
+                "--prompt",
+                "preserve details",
+                "--input-fidelity",
+                "high",
+                "--dry-run",
+                model="azure/gpt-image-2",
+            )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("input_fidelity", result.stderr)
+        self.assertEqual(FakeImageHandler.requests, [])
+
+    def test_gpt_image_2_rejects_transparent_background(self) -> None:
+        result = self._run(
+            "generate",
+            "--prompt",
+            "transparent cutout",
+            "--background",
+            "transparent",
+            "--dry-run",
+            model="azure/gpt-image-2-2026-04-21",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("transparent", result.stderr)
+        self.assertEqual(FakeImageHandler.requests, [])
+
+    def test_live_smoke_requires_explicit_billable_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [sys.executable, str(LIVE_SMOKE_SCRIPT), "--out-dir", directory],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--confirm-billable", result.stderr)
         self.assertEqual(FakeImageHandler.requests, [])
 
     def test_generate_batch_runs_distinct_jobs_sequentially(self) -> None:

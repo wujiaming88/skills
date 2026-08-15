@@ -27,7 +27,10 @@ DEFAULT_TIMEOUT_SECONDS = 180.0
 MAX_BATCH_JOBS = 500
 MAX_EDIT_IMAGES = 16
 MAX_IMAGE_BYTES = 50 * 1024 * 1024
-RESERVED_EXTRA_FIELDS = {"model", "prompt", "n", "image", "mask"}
+GPT_IMAGE_2_MODEL = "gpt-image-2"
+GPT_IMAGE_2_MAX_EDGE = 3840
+GPT_IMAGE_2_MIN_PIXELS = 655_360
+GPT_IMAGE_2_MAX_PIXELS = 8_294_400
 PROMPT_FIELD_NAMES = (
     "use_case",
     "asset_type",
@@ -52,6 +55,15 @@ REQUEST_OPTION_NAMES = (
     "response_format",
     "user",
 )
+RESERVED_EXTRA_FIELDS = {
+    "model",
+    "prompt",
+    "n",
+    "image",
+    "mask",
+    "input_fidelity",
+    *REQUEST_OPTION_NAMES,
+}
 
 
 class CliError(RuntimeError):
@@ -155,7 +167,55 @@ def _augment_prompt(prompt: str, fields: Mapping[str, Any], enabled: bool) -> st
     return "\n".join(lines)
 
 
-def _validate_request_values(count: int, values: Mapping[str, Any]) -> None:
+def _is_gpt_image_2_model(model: str) -> bool:
+    """识别带供应商前缀及版本后缀的 GPT Image 2 模型名。"""
+    name = model.rsplit("/", 1)[-1]
+    return name == GPT_IMAGE_2_MODEL or name.startswith(f"{GPT_IMAGE_2_MODEL}-")
+
+
+def _parse_size(size: str) -> tuple[int, int] | None:
+    match = re.fullmatch(r"([1-9][0-9]*)x([1-9][0-9]*)", size)
+    if match is None:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
+def _validate_gpt_image_2_size(size: str) -> None:
+    if size == "auto":
+        return
+    parsed = _parse_size(size)
+    if parsed is None:
+        raise CliError("GPT Image 2 size must be auto or WIDTHxHEIGHT, for example 1024x1024.")
+    width, height = parsed
+    maximum, minimum = max(width, height), min(width, height)
+    pixels = width * height
+    if maximum > GPT_IMAGE_2_MAX_EDGE:
+        raise CliError("GPT Image 2 size maximum edge must not exceed 3840px.")
+    if width % 16 or height % 16:
+        raise CliError("GPT Image 2 size width and height must be multiples of 16px.")
+    if maximum > 3 * minimum:
+        raise CliError("GPT Image 2 size aspect ratio must not exceed 3:1.")
+    if not GPT_IMAGE_2_MIN_PIXELS <= pixels <= GPT_IMAGE_2_MAX_PIXELS:
+        raise CliError("GPT Image 2 size total pixels must be between 655,360 and 8,294,400.")
+
+
+def _validate_model_options(model: str, values: Mapping[str, Any]) -> None:
+    if not _is_gpt_image_2_model(model):
+        return
+    size = values.get("size")
+    if size is not None:
+        _validate_gpt_image_2_size(str(size))
+    if values.get("background") == "transparent":
+        raise CliError("GPT Image 2 does not support transparent backgrounds.")
+    if values.get("input_fidelity") is not None:
+        raise CliError("GPT Image 2 always uses high input fidelity; omit input_fidelity.")
+
+
+def _validate_request_values(
+    model: str,
+    count: int,
+    values: Mapping[str, Any],
+) -> None:
     if count < 1 or count > 10:
         raise CliError("--n must be between 1 and 10.")
     compression = values.get("output_compression")
@@ -165,6 +225,7 @@ def _validate_request_values(count: int, values: Mapping[str, Any]) -> None:
     output_format = values.get("output_format")
     if background == "transparent" and output_format not in {None, "png", "webp"}:
         raise CliError("Transparent background requires png or webp output format.")
+    _validate_model_options(model, values)
 
 
 def _build_payload(
@@ -174,7 +235,7 @@ def _build_payload(
     values: Mapping[str, Any],
     extra: Mapping[str, Any],
 ) -> dict[str, Any]:
-    _validate_request_values(count, values)
+    _validate_request_values(model, count, values)
     payload: dict[str, Any] = {"model": model, "prompt": prompt, "n": count}
     for name in REQUEST_OPTION_NAMES:
         if values.get(name) is not None:
@@ -502,7 +563,7 @@ def _add_request_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--base-url", help=f"Override {API_BASE_URL_ENV}")
     parser.add_argument("--model", help=f"Override {MODEL_ENV}")
     parser.add_argument("--n", type=int, default=1, help="Images per prompt, 1-10")
-    parser.add_argument("--size", help="Provider-specific size, for example 1024x1024")
+    parser.add_argument("--size", help="Explicit output size; omit to use the provider default")
     parser.add_argument("--quality", help="Provider-specific quality")
     parser.add_argument("--background", choices=["transparent", "opaque", "auto"])
     parser.add_argument("--output-format", choices=["png", "jpeg", "webp"])

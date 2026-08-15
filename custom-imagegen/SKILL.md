@@ -13,7 +13,7 @@ Generate or edit images through configured OpenAI-compatible image endpoints. Ke
 - Support edits through `POST /images/edits` with 1–16 local images and an optional mask.
 - Support distinct batch jobs through JSONL.
 - Accept both `data[].b64_json` and `data[].url` responses.
-- Treat `size`, `quality`, `background`, `output_format`, and provider-specific fields as pass-through options. Do not assume the configured model supports them.
+- Treat `quality`, `output_format`, and provider-specific fields as pass-through options. Apply the documented model profile when the configured model is GPT Image 2, including provider-prefixed names such as `azure/gpt-image-2`.
 - Do not use `/images/variations`; it is a legacy DALL-E 2 endpoint and is not needed for this workflow.
 
 ## Configure
@@ -61,6 +61,8 @@ python3 {baseDir}/scripts/image_gen.py generate \
   --out output/custom-imagegen/night-market.png
 ```
 
+Omit `--size` to let the provider use its default, normally `auto`. If the result must have fixed dimensions, always pass `--size WIDTHxHEIGHT`. For GPT Image 2, the CLI validates the official resolution limits before making a billable request.
+
 Use `--base-url` or `--model` only to override the corresponding non-secret environment variable. Use `--extra-json` for documented provider fields:
 
 ```bash
@@ -80,11 +82,10 @@ python3 {baseDir}/scripts/image_gen.py edit \
   --image material-reference.png \
   --mask mask.png \
   --prompt "Replace only the product material with brushed aluminum" \
-  --input-fidelity high \
   --out output/custom-imagegen/product-edited.png
 ```
 
-State edit invariants in the prompt, such as `change only the material; preserve shape, camera angle, lighting, and composition`. The mask is provider-interpreted and does not guarantee pixel-exact boundaries.
+State edit invariants in the prompt, such as `change only the material; preserve shape, camera angle, lighting, and composition`. The mask is provider-interpreted and does not guarantee pixel-exact boundaries. Omit `--input-fidelity` for GPT Image 2 because it always processes image inputs at high fidelity. Do not request `--background transparent` with GPT Image 2.
 
 ## Generate distinct batch jobs
 
@@ -104,6 +105,18 @@ python3 {baseDir}/scripts/image_gen.py generate-batch \
 ```
 
 Batch generation is sequential so failures and provider costs remain easy to attribute. Use `--dry-run` to inspect every payload and output path without requiring the API key.
+
+## Verify a live provider
+
+Run the opt-in smoke test after changing the endpoint, model, SDK, or multipart implementation:
+
+```bash
+python3 {baseDir}/scripts/live_smoke_test.py \
+  --out-dir output/custom-imagegen/live-smoke \
+  --confirm-billable
+```
+
+This makes four live calls: fixed-size generation, single-image edit, multi-image edit, and masked edit. Use a new output directory for each run. Never add the API key to the command.
 
 ## Prompt structure
 

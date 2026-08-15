@@ -40,7 +40,18 @@ It sends `model`, `prompt`, `n`, one or more `image` parts, and an optional `mas
 
 The CLI sends `size`, `quality`, `background`, `output_format`, `output_compression`, `moderation`, `response_format`, and `user` only when explicitly provided. Edits additionally accept `input_fidelity`. Because model support varies, verify each option against the provider documentation before relying on it.
 
-Use `--extra-json` for provider-specific body fields. It must be an object and cannot replace `model`, `prompt`, `n`, `image`, or `mask`.
+Use `--extra-json` for provider-specific body fields. It must be an object and cannot replace declared CLI fields such as `model`, `prompt`, `n`, `image`, `mask`, `size`, or `input_fidelity`.
+
+## GPT Image 2 profile
+
+Apply this profile when the final model-name segment is `gpt-image-2` or a versioned name such as `gpt-image-2-2026-04-21`. Provider prefixes such as `azure/` do not change the profile.
+
+- Omit `size` to use the provider default, normally `auto`. Pass `--size` explicitly whenever fixed output dimensions are required.
+- Accept `auto` or `WIDTHxHEIGHT` when the maximum edge is at most `3840px`, both edges are multiples of `16px`, the aspect ratio is at most `3:1`, and the total pixel count is between `655,360` and `8,294,400`.
+- Omit `input_fidelity`; GPT Image 2 always processes input images at high fidelity.
+- Reject `background=transparent`; GPT Image 2 does not currently support transparent backgrounds.
+
+Keep non-GPT-Image-2 sizes provider-specific and pass them through unchanged.
 
 ## Accepted responses
 
@@ -65,6 +76,10 @@ The CLI never forwards the API key to a returned download URL. It rejects non-HT
 - No assumption that transparency, size, quality, moderation, seeds, or negative prompts are supported.
 - No automatic retry, because generation and edit requests may be billable and the provider's idempotency contract is unknown.
 - Batch jobs run sequentially and stop on the first failure.
+
+## Live smoke test
+
+Run `scripts/live_smoke_test.py --out-dir <new-directory> --confirm-billable` only after confirming that four billable live calls are acceptable. It validates a fixed-size generation followed by single-image, multi-image, and masked edits. It reads the same three required environment variables and never accepts the API key as a command-line argument.
 
 ## Troubleshooting
 
