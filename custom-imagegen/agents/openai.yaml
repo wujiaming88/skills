@@ -1,0 +1,4 @@
+interface:
+  display_name: "Custom Image Generator"
+  short_description: "Generate and edit images with a custom compatible API"
+  default_prompt: "Use $custom-imagegen to generate or edit an image with my configured model."
