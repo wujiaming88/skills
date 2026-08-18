@@ -1,6 +1,6 @@
 # Change Test Evidence
 
-Use this template for every maintained-code implementation or review. Keep small-change entries compact, but retain enough evidence to audit every Gate and Risk ID.
+Use this template for every maintained-code implementation or explicitly requested test-verification audit. Keep small-change entries compact, but retain enough evidence to audit every Gate and Risk ID.
 
 ## Contents
 
