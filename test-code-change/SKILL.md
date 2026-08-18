@@ -1,11 +1,13 @@
 ---
 name: test-code-change
-description: "Mandatory risk-driven verification workflow for maintained-code changes. Use when implementing, fixing, refactoring, deleting, migrating, or reviewing code to identify all materially affected behavior, map failure risks to sufficient tests, execute required evidence, and report unresolved test gaps and residual risk."
+description: "Risk-driven verification workflow for authorized maintained-code changes. Use when a request includes implementing, fixing, refactoring, deleting, migrating, or upgrading maintained code to identify materially affected behavior, map failure risks to sufficient tests, execute evidence, and report gaps and residual risk. Do not trigger for repository familiarization, architecture exploration, status inspection, or general code review unless the user explicitly requests test verification or implementation."
 ---
 
 # Verify Code Changes
 
 Maximize confidence in code changes by identifying every materially affected behavior and requiring risk-proportionate evidence capable of exposing its important failure modes.
+
+Apply this Skill only after the request authorizes a maintained-code change, or when the user explicitly requests a test-verification audit. Do not apply it to repository familiarization, architecture exploration, status inspection, or general code review. If a review reveals changes to implement, start this workflow only after implementation is authorized.
 
 For every material impact, assign exactly one final status:
 
