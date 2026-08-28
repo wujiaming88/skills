@@ -1,6 +1,6 @@
 ---
 name: "cron-run-reliability"
-description: "长 isolated Cron 的有界等待、机械验收与证据化收口"
+description: "提升长时 isolated Cron 的可靠性：有界等待、机械验收、故障恢复与证据化收口"
 ---
 
 # Cron Run Reliability
@@ -36,22 +36,34 @@ Do not synthesize ad-hoc polling loops, wrapper scripts, or shell process-kill l
 3. Start each child task once. A child that writes its files must also return a short final assistant message; do not stop on a tool result.
 4. Wait only with the bundled `wait` command. `WAIT_TIMEOUT` is a checkpoint, not a task failure.
 5. After every wait, run `check-files`. File checks prove only point-in-time metadata for the inode opened during inspection. They do not prove semantic correctness, provenance, expected glob cardinality, or later path stability.
-6. Apply existing business validators separately. A `.done` file is not a substitute for semantic validation.
+6. Apply existing business validators separately. A completion marker is not a substitute for semantic validation.
 7. Run existing build, commit, push, or publish commands directly when the business task requires them. This skill does not generate or execute those commands.
 8. Run `check-git` and `check-http` only when a repository or public URL is actually part of the task.
 9. Classify the final result as `SUCCESS`, `SUCCESS_WITH_WARNINGS`, or `BLOCKED` from durable evidence. Notification failure must not overwrite verified publication success.
-10. Before retrying work, inspect current-run evidence first to avoid duplicate research, editing, commits, or publication.
+10. Before retrying work, inspect current-run evidence first to avoid duplicate work or publication.
+
+## Recovery order
+
+When a run appears stalled or failed, do not improvise a recovery script. Follow this order:
+
+1. Identify the current unique run directory and expected artifact manifest.
+2. Inspect current-run completion markers and artifacts with `check-files`.
+3. Run the task's existing semantic validators separately.
+4. Check whether the child is still active only as supporting evidence; session status is not authoritative.
+5. Verify applicable build, Git, HTTP, and delivery boundaries independently.
+6. Resume from the first unverified boundary; do not repeat already verified work.
+7. Classify the terminal result from evidence, not from the last tool error.
+
+For symptom-specific handling, read `references/common-failure-playbook.md`. It is a generic incident playbook, not a business workflow.
 
 ## Commands
 
 ### `wait`
 
-Boundedly wait for exact files and/or glob matches:
-
 ```bash
 python3 scripts/reliable_cron.py wait \
-  --file /absolute/run/master.done \
-  --glob '/absolute/run/shard-*.md' \
+  --file /absolute/run/completed.marker \
+  --glob '/absolute/run/part-*.data' \
   --timeout 1800 \
   --interval 30 \
   --min-bytes 1
@@ -59,25 +71,21 @@ python3 scripts/reliable_cron.py wait \
 
 - All exact files must exist, be regular non-symlink files, and meet `--min-bytes`.
 - Every matched glob item must also pass; an empty glob is not success.
-- For an exact expected shard set, enumerate each shard with `--file`; a glob cannot prove count.
-- Timeout emits one JSON line with `status: "WAIT_TIMEOUT"` and exits `0` so the Cron turn can continue to inspect evidence naturally.
+- For an exact expected set, enumerate every item with `--file`; a glob cannot prove count.
+- Timeout emits one JSON line with `status: "WAIT_TIMEOUT"` and exits `0` so the Cron turn can inspect evidence naturally.
 
 ### `check-files`
 
-Strictly re-check mechanical file evidence:
-
 ```bash
 python3 scripts/reliable_cron.py check-files \
-  --file /absolute/run/master.done \
-  --file /absolute/run/research-manuscript.md \
+  --file /absolute/run/completed.marker \
+  --file /absolute/run/final-artifact.data \
   --min-bytes 1
 ```
 
-Missing, empty, non-regular, or symlinked paths fail mechanically. This command still does not validate meaning.
+Missing, empty, non-regular, or symlinked paths fail mechanically. This command does not validate meaning.
 
 ### `check-git`
-
-Verify a repository only when Git publication evidence is applicable:
 
 ```bash
 python3 scripts/reliable_cron.py check-git \
@@ -90,17 +98,15 @@ python3 scripts/reliable_cron.py check-git \
 
 - The named branch must be checked out; detached HEAD or another branch fails.
 - Requires a clean worktree, no merge/rebase/cherry-pick/revert/bisect state, and local `HEAD` equal to the selected remote branch.
-- `--verify-remote` uses `git ls-remote` for the live remote rather than trusting a cached tracking ref.
-- Before/after snapshots must agree; an observed concurrent repository change fails conservatively.
-- Each Git command runs in a process group. On timeout or interruption, the helper sends TERM then KILL to the group and emits redacted evidence.
+- `--verify-remote` uses `git ls-remote` rather than trusting a cached tracking ref.
+- Before/after snapshots must agree; observed concurrent repository change fails conservatively.
+- Each Git command runs in a process group. Timeout or interruption sends TERM then KILL and emits redacted evidence.
 
 ### `check-http`
 
-Verify public HTTP(S) endpoints only when HTTP evidence is applicable:
-
 ```bash
 python3 scripts/reliable_cron.py check-http \
-  --url https://example.com/published-page \
+  --url https://example.com/published-resource \
   --attempts 5 \
   --interval 10 \
   --request-timeout 20 \
@@ -108,9 +114,9 @@ python3 scripts/reliable_cron.py check-http \
 ```
 
 - Only credential-free public HTTP(S) destinations are allowed. Any non-global DNS answer fails.
-- Every redirect and the final URL are revalidated; validated DNS answers are pinned inside the worker to resist rebinding.
+- Every redirect and final URL are revalidated; validated DNS answers are pinned against rebinding.
 - Query strings and fragments are omitted from output; exception text is normalized and redacted.
-- Request and total wall-clock deadlines include bounded worker startup/teardown accounting. Forced cleanup may slightly exceed the requested deadline by the fixed cleanup grace, and the command fails conservatively.
+- Request and total deadlines include bounded worker lifecycle accounting. Fixed cleanup grace may slightly exceed the requested deadline and fails conservatively.
 
 ## Exit and output contract
 
@@ -146,3 +152,4 @@ Final: SUCCESS | SUCCESS_WITH_WARNINGS | BLOCKED
 - A child marked failed after producing all validated current-run artifacts is normally a warning.
 - Mechanical checks never override semantic validators.
 - Old artifacts outside the unique run directory are not evidence for the current run.
+- A late noncritical diagnostic or delivery failure must not erase independently verified success.
