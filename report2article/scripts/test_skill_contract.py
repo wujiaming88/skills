@@ -39,6 +39,19 @@ class ContractTest(unittest.TestCase):
         self.assertNotIn('相近的抽象层级和标题句式', self.all)
         self.assertIn('粗体小标题', self.main)
 
+    def test_heading_balance_in_both_directions(self):
+        for term in ('双向检查', '恢复必要层次', '子问题边界', '各章节可按内容采用不同深度', '不把清零或减少某级标题作为优化目标'):
+            self.assertIn(term, self.main)
+        review = self.refs['reading-review.md']
+        for term in ('过密分节', '层次缺失', '拆分、合并或不拆的理由', '短而单一', '回查困难'):
+            self.assertIn(term, review)
+
+    def test_structure_approval_precedes_render_checks(self):
+        review = self.refs['reading-review.md']
+        for term in ('绑定最终稿版本', '层级合法', '标题ID唯一', '目录目标可达', '不只从待测页面反向生成预期', '不评价标题多少优劣'):
+            self.assertIn(term, review)
+        self.assertIn('标题数量与程序通过不代替阅读判断', self.main)
+
     def test_public_information_cannot_be_hidden(self):
         for term in ('实质信息', '公开补充材料', '准确可访问落点', '不能移入折叠区', '无法确定能否移出时先保留公开'):
             self.assertIn(term, self.main)
