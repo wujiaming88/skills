@@ -1,86 +1,77 @@
 #!/usr/bin/env python3
-"""验证 report2article Skill 的结构与核心编辑契约。"""
-
-from __future__ import annotations
-
+"""Static rule-regression checks; not a substitute for article semantic review."""
+from pathlib import Path
 import re
 import unittest
-from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 
-SKILL_DIR = Path(__file__).resolve().parents[1]
-SKILL_FILE = SKILL_DIR / "SKILL.md"
-
-
-def read_text(path: Path) -> str:
-    """以 UTF-8 读取文本，并在失败时保留文件路径上下文。"""
-    try:
-        return path.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise RuntimeError(f"无法读取文件：{path}") from exc
-
-
-class ReportToArticleContractTest(unittest.TestCase):
-    """防止后续修改破坏 Skill 的读者型编辑契约。"""
-
+class ContractTest(unittest.TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
-        cls.skill_text = read_text(SKILL_FILE)
+    def setUpClass(cls):
+        cls.main = (ROOT / 'SKILL.md').read_text()
+        cls.refs = {p.name: p.read_text() for p in (ROOT / 'references').glob('*.md')}
+        cls.all = cls.main + '\n'.join(cls.refs.values())
 
-    def test_frontmatter_describes_reader_oriented_editing(self) -> None:
-        """Skill 发现信息应覆盖结构、表达和配图，而非字面搬运。"""
-        frontmatter = self.skill_text.split("---", 2)[1]
-        self.assertIn('name: "report2article"', frontmatter)
-        for concept in ("结构", "表达", "配图"):
-            self.assertIn(concept, frontmatter)
-        self.assertNotIn("只重组排序起标题", frontmatter)
+    def test_frontmatter(self):
+        head = self.main.split('---', 2)[1]
+        self.assertIn('name: "report2article"', head)
+        for term in ('报告转文章', '文章阅读优化', '结构', '表达', '配图'):
+            self.assertIn(term, head)
+        self.assertLess(len(self.main), 10000)
 
-    def test_all_references_exist(self) -> None:
-        """入口文件提到的每份相对引用都必须可读取。"""
-        references = set(re.findall(r"references/[A-Za-z0-9._/-]+\.md", self.skill_text))
-        self.assertGreaterEqual(len(references), 6)
-        missing = [reference for reference in references if not (SKILL_DIR / reference).is_file()]
-        self.assertEqual([], missing)
+    def test_reference_resolution(self):
+        refs = set(re.findall(r'references/[A-Za-z0-9._/-]+\.md', self.main))
+        self.assertGreaterEqual(len(refs), 7)
+        for ref in refs:
+            self.assertTrue((ROOT / ref).is_file(), ref)
 
-    def test_semantic_fidelity_replaces_verbatim_freeze(self) -> None:
-        """允许等义编辑，同时保留事实与证据边界。"""
-        for concept in ("语义保真", "编辑自由", "判断强弱", "等义"):
-            self.assertIn(concept, self.skill_text)
-        for conflicting_rule in (
-            "正文内容一字不动",
-            "内容层一字不动",
-            "不允许对研究报告的内容进行任何增、删、改",
-        ):
-            self.assertNotIn(conflicting_rule, self.skill_text)
+    def test_fidelity_and_authorization(self):
+        for term in ('语义保真', '编辑自由', '等义', '判断强弱', '研究授权'):
+            self.assertIn(term, self.main)
+        for forbidden in ('正文内容一字不动', '内容层一字不动', '只重组排序起标题'):
+            self.assertNotIn(forbidden, self.all)
 
-    def test_visual_guidance_has_fidelity_and_fallback_rules(self) -> None:
-        """配图必须降低理解成本，且不能伪造数据或执行越界操作。"""
-        visual_text = read_text(SKILL_DIR / "references/visual-guidelines.md")
-        for concept in ("认知负担", "原报告", "来源", "替代文本", "配图方案"):
-            self.assertIn(concept, visual_text)
-        self.assertIn("不得编造", visual_text)
-        self.assertIn("用户明确要求", visual_text)
+    def test_headings_are_optional_navigation(self):
+        for term in ('编辑分块不等于文章分节', '不强求句式一致', '不设标题数量配额', '短文可无子标题', '多主题周报'):
+            self.assertIn(term, self.main)
+        self.assertNotIn('同级标题句式一致', self.all)
+        self.assertNotIn('相近的抽象层级和标题句式', self.all)
+        self.assertIn('粗体小标题', self.main)
 
-    def test_prose_supports_one_consistent_style(self) -> None:
-        """可按场景选择文风，但整篇不能混杂多种声音。"""
-        prose_text = read_text(SKILL_DIR / "references/prose-style.md")
-        for style in ("专业通俗", "技术深度", "媒体叙事", "周报速读"):
-            self.assertIn(style, prose_text)
-        self.assertIn("整篇只选一个主风格", prose_text)
+    def test_public_information_cannot_be_hidden(self):
+        for term in ('实质信息', '公开补充材料', '准确可访问落点', '不能移入折叠区', '无法确定能否移出时先保留公开'):
+            self.assertIn(term, self.main)
+        mapping = self.refs['info-checklist-template.md']
+        for term in ('内容去向', '处理理由', '关键限制不能只放附录', '抓取过程与由其形成的证据缺口分开'):
+            self.assertIn(term, mapping)
 
-    def test_long_report_audits_atomic_information(self) -> None:
-        """长文复核必须覆盖对象内部信息，不能只核对对象数量。"""
-        protocol = read_text(SKILL_DIR / "references/long-report-protocol.md")
-        for concept in ("原子信息", "事实", "数据", "判断", "链接", "二次派生"):
-            self.assertIn(concept, protocol)
-        self.assertNotIn("只证明\"文章覆盖了我提取的对象清单\"", protocol)
+    def test_opening_and_ending(self):
+        for term in ('开头直接进入', '不占导语', '非实测性质', '局部beta', '以最后一个实质段落结束', '不写入文章首尾'):
+            self.assertIn(term, self.main)
 
-    def test_structure_does_not_invent_implicit_relationships(self) -> None:
-        """章节组织不能把模型推断包装成报告结论。"""
-        skeleton = read_text(SKILL_DIR / "references/logic-skeleton.md")
-        self.assertIn("明确表达", skeleton)
-        self.assertNotIn("揭示报告中**已隐含**的关联", skeleton)
+    def test_independent_lists_and_reuse(self):
+        protocol = self.refs['long-report-protocol.md']
+        for term in ('不看首次账本或成稿', '两份清单完成冻结后再协调', '一对多', '多对一', '不重写凑数', '未销账0', '不能声称重新做了盲提取'):
+            self.assertIn(term, protocol)
 
+    def test_reading_review_and_recheck(self):
+        review = self.refs['reading-review.md']
+        for term in ('读完整篇', '首尾', '受影响', '完整新版本', '不以抽查', '引用跳转和已有深链接'):
+            self.assertIn(term, review)
+        self.assertIn('最终验收仍覆盖完整新版', self.main)
 
-if __name__ == "__main__":
+    def test_visual_authorization_and_fallback(self):
+        visual = self.refs['visual-guidelines.md']
+        for term in ('认知负担', '不得编造', '来源', '替代文本', '用户明确要求', '配图方案', '独立交付说明', '查看实际图片'):
+            self.assertIn(term, visual)
+
+    def test_style_and_relationships(self):
+        prose = self.refs['prose-style.md']
+        for term in ('整篇只选一个主风格', '专业通俗', '技术深度', '媒体叙事', '周报速读'):
+            self.assertIn(term, prose)
+        self.assertIn('明确表达', self.refs['logic-skeleton.md'])
+        self.assertIn('未明确关系', self.refs['logic-skeleton.md'])
+
+if __name__ == '__main__':
     unittest.main(verbosity=2)
