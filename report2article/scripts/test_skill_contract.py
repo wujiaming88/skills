@@ -86,5 +86,44 @@ class ContractTest(unittest.TestCase):
         self.assertIn('明确表达', self.refs['logic-skeleton.md'])
         self.assertIn('未明确关系', self.refs['logic-skeleton.md'])
 
+    def test_compact_definition_contract(self):
+        template = self.refs['info-checklist-template.md']
+        for term in ('单处定义与短引用', '两份独立清单不能共享', '@O01', '@C01', '@L01',
+                     '一次直接定位', '定义中不再转引', '悬空、循环、深链', '不设清单字数或条目硬上限',
+                     '引用能解析仅证明可定位，不证明等义'):
+            self.assertIn(term, template)
+        self.assertIn('只按该模板第1—2节', self.main)
+
+    def test_mapping_differences_not_count_parity(self):
+        template = self.refs['info-checklist-template.md']
+        for term in ('等义且无差异项短记', '双方编号', '准确文章落点', '状态',
+                     '跨类别、一对多/多对一、补漏、来源争议或判断差异', '逐项打开两侧条目',
+                     '不能因母稿或文章已写就虚称原清单已记', '不能计数齐平',
+                     '无源增写须回母稿纠正', '来源直接/间接支撑', '非新法'):
+            self.assertIn(term, template)
+
+    def test_continuation_requires_context_and_reading_evidence(self):
+        protocol = self.refs['long-report-protocol.md']
+        for term in ('同一编辑者连续阶段', '母稿与所用规则SHA均未变',
+                     '前次完整读取证据齐全', '所需上下文确实仍在', '前次读取范围及末尾定位',
+                     '同session或SHA相同本身不证明', '换人、缺上下文、版本变化或读取证据不足',
+                     '所必需文件的完整读取', '新到的第二清单仍须完整读完'):
+            self.assertIn(term, protocol)
+
+    def test_phase1_is_handoff_not_final_semantics(self):
+        protocol = self.refs['long-report-protocol.md']
+        for term in ('父级中间Phase1仅核交接完整性', '两原清单冻结版本', '写权已交回',
+                     '明确阻断项', '读取尾部/截断状态', '已有具体疑点即读取受影响内容',
+                     '不把中间检查标成文章PASS', '由原编辑继续协调'):
+            self.assertIn(term, protocol)
+
+    def test_final_full_reads_and_private_boundary_unchanged(self):
+        protocol = self.refs['long-report-protocol.md']
+        for term in ('编辑者完成协调后完整读取', '父级最终也须完整读取冻结母稿',
+                     '两份清单、映射与文章', '不能只看done、差异摘要',
+                     '私密内容仍不传给编辑', '第6节编辑者和父级最终全文验收仍完整执行'):
+            self.assertIn(term, protocol)
+        self.assertIn('执行`reading-review.md`完整阅读', protocol)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
