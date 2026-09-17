@@ -97,7 +97,7 @@ class ContractTest(unittest.TestCase):
     def test_mapping_differences_not_count_parity(self):
         template = self.refs['info-checklist-template.md']
         for term in ('等义且无差异项短记', '双方编号', '准确文章落点', '状态',
-                     '跨类别、一对多/多对一、补漏、来源争议或判断差异', '逐项打开两侧条目',
+                     '真实漏项', '跨类别复杂拆合', '来源争议', '判断变化', '逐项打开两侧条目',
                      '不能因母稿或文章已写就虚称原清单已记', '不能计数齐平',
                      '无源增写须回母稿纠正', '来源直接/间接支撑', '非新法'):
             self.assertIn(term, template)
