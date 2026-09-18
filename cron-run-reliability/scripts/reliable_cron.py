@@ -70,7 +70,7 @@ def expand(raw: str) -> str:
 
 def inspect_regular_file(raw: str, min_bytes: int) -> tuple[str, str | None, int | None]:
     path = expand(raw)
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     try:
         descriptor = os.open(path, flags)
     except FileNotFoundError:
@@ -241,7 +241,7 @@ def short_git_error(exc: BaseException) -> str:
 
 def git_in_progress(repo: Path, timeout: float) -> list[str]:
     states: list[str] = []
-    for name in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-apply", "rebase-merge"):
+    for name in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-apply", "rebase-merge", "BISECT_START"):
         raw = run_git(repo, timeout, "rev-parse", "--git-path", name)
         path = Path(raw if os.path.isabs(raw) else repo / raw)
         if path.exists():

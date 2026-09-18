@@ -140,12 +140,24 @@ class ReliableCronTests(unittest.TestCase):
     def test_wait_existing_and_delayed_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "delayed done"
-            timer = threading.Timer(0.12, target.write_text, args=("ok",), kwargs={"encoding": "utf-8"}); timer.start()
-            try:
-                completed, payload = self.run_helper("wait", "--file", str(target), "--timeout", "1", "--interval", "0.03")
-            finally:
-                timer.join(timeout=1)
-            self.assertEqual((completed.returncode, payload["status"]), (0, "DONE")); self.assertGreaterEqual(payload["checks"], 2)
+            ready_path = Path(directory) / "wait-ready"
+            env = dict(os.environ); env["RELIABLE_CRON_WAIT_READY"] = str(ready_path)
+            process = subprocess.Popen(
+                [sys.executable, "-c", WAIT_READY_LAUNCHER, str(SCRIPT), "wait", "--file", str(target),
+                 "--timeout", "1", "--interval", "0.03"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env,
+            )
+            self.wait_for_process_ready(process, ready_path)
+            target.write_text("ok", encoding="utf-8")
+            stdout, stderr = process.communicate(timeout=2)
+            self.assertEqual(stderr, "")
+            self.assertEqual(len(stdout.splitlines()), 1, stdout)
+            payload = json.loads(stdout)
+            self.assertEqual((process.returncode, payload["status"]), (0, "DONE"))
+            self.assertGreaterEqual(payload["checks"], 2)
 
     def test_wait_timeout_is_nonfatal_and_bounded(self) -> None:
         started = time.monotonic()

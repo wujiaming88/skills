@@ -1,23 +1,17 @@
-# Design boundary
+# 可靠性规范责任索引
 
-The skill exists only to remove error-prone, model-generated control scripts and ambiguous recovery decisions from long isolated Cron runs.
+仅在维护、合并或检查规则归属时读取，不是额外执行流程。保留本路径供既有引用使用；通用可靠性与按需周报专项仍是同一个Skill，不新增控制器。
 
-Included:
+| 需要维护的内容 | 唯一权威位置 |
+| --- | --- |
+| 适用门、禁止新增的系统/配置变更、工具边界、run身份、阶段/标记、等待、恢复、业务终态 | [SKILL.md](../SKILL.md) |
+| 调度配置、递归REF、工具权限、投递静态预检及准出规则传播 | [config-audit.md](config-audit.md)；不另定准出或用静态通过代替自然实跑 |
+| reliable_cron.py文件/Git/HTTP机械接口、安全、JSON/退出码及回归维护约束 | [helper-contract.md](helper-contract.md)；检查不是语义验收、锁或未来状态保证 |
+| 异常症状到既有规则的定位 | [common-failure-playbook.md](common-failure-playbook.md)；不复制恢复流程 |
+| 固定搜索适配器及其权限边界 | [research-contract.md](research-contract.md) |
+| 周报交接、配图、构建/双仓/线上当前版本顺序与announce交付 | [weekly-publication.md](weekly-publication.md)；普通长任务不加载 |
+| 周报check-inputs/check-publication参数、源/构建契约及JSON/退出码 | [weekly-ops-contract.md](weekly-ops-contract.md) |
+| 研究逐主张证据与准出 | [industry-research-evidence](../../industry-research-evidence/SKILL.md)；主题Prompt保留范围与深度目标 |
+| 文章语义保真 | weekly-publication第4节引用的report2article及既有交接协议 |
 
-- bounded waiting for child/file handoffs;
-- strict point-in-time checks of opened absolute regular files and glob matches;
-- trusted-repository clean/synced Git verification on the explicitly checked-out target branch, optionally against its live remote branch;
-- bounded public HTTP(S) 2xx verification, including public-address checks before requests and after every redirect;
-- evidence-first terminal classification, generic failure handling, and idempotent recovery guidance.
-
-Explicitly excluded:
-
-- reminders, one-command jobs, normal backups, health checks, and simple fetch-and-send tasks;
-- scheduling or Cron creation/editing;
-- persistent workflow state, DAGs, business retries, or orchestration engines;
-- research, editorial, factual, or domain-specific quality rules;
-- arbitrary command execution wrappers;
-- content generation, builds, commits, pushes, publication, or notification delivery;
-- task-specific names, date paths, repository names, URLs, acceptance thresholds, or business logic.
-
-Filesystem results describe inode metadata observed while each file was safely open; paths can change immediately afterward and are not durable ownership or current-run proof. The helper observes mechanical evidence only. Business prompts own semantics and established build/publish commands. The generic playbook may classify and sequence recovery, but it must not execute business retries or weaken task-specific validators. Additions require a reusable mechanical or recovery need, multiple long-job use cases, and regression evidence where code changes are involved.
+不在本索引再抄写执行规则。脚本、测试路径及生产断言保护等维护要求已归入helper-contract的“回归测试同步”；文档整理不代表生产实跑通过。

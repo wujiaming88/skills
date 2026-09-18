@@ -1,155 +1,97 @@
 ---
 name: "cron-run-reliability"
-description: "提升长时 isolated Cron 的可靠性：有界等待、机械验收、故障恢复与证据化收口"
+description: "审计长时isolated Cron配置，执行文件交接、等待、预算控制与中断恢复；研究周报按专项完成发布和announce交付。"
 ---
 
-# Cron Run Reliability
+# Cron Run Reliability — 统一执行规范
 
-Use only for long OpenClaw `isolated` Cron jobs with child-agent/file handoffs, multiple durable artifacts, or a multi-step publication boundary.
+## 适用与读取路由
 
-## Applicability gate
+用于长时 isolated Cron 的配置审计与执行：有子任务/文件交接、多份持久产物与发布边界，或曾有假成功、假失败、临时轮询脚本问题的同类任务。提醒、普通备份、单命令、简单健康检查、简单抓取发送不套用。
 
-Use this skill only when at least one is true:
+本文件是通用工具边界、运行身份、状态、等待、恢复与业务终态的唯一规则来源。**配置审计**先读 [config-audit.md](references/config-audit.md)，只要求检查时停在报告，不修改配置或引用文件。**周报/研究报告发布**还须完整读取 [weekly-publication.md](references/weekly-publication.md)，包括周报投递规则；普通长任务不读专项文件。**异常定位**可查 [症状索引](references/common-failure-playbook.md)。维护集合职责边界时查 [责任索引](references/design-boundary.md)，不将其作为另一套执行规则。helper和研究适配器在第1节按需读取。本文中的相对路径以本SKILL.md所在目录为基准；支持文件中的链接以各自所在目录为基准。
 
-- an isolated Cron spawns child agents and must wait for file handoffs;
-- a run has multiple durable artifacts plus a release/publication boundary;
-- a comparable run previously suffered false success, false failure, or unsafe model-generated polling code.
+不新增执行器、调度、DAG、业务重试/自动恢复服务、通知系统、跨仓事务或锁，不改并发、LCM、模型路由/超时、主机配置、权限或历史任务状态。状态文档只是证据，不是自动续跑系统。研究范围与深度目标由主题Prompt负责；周报数据及研究准出统一由 [industry-research-evidence](../industry-research-evidence/SKILL.md) 决定，文章语义由周报专项引用的report2article和交接协议负责，不在本技能维护相反的数量、双源或格式硬闸。helper只检查，不生成正文或代执行构建、commit、push、通知。技术验证只决定对应发布步骤能否被确认，不另设更严的数据准出条件。
 
-Do **not** use it for reminders, one-command jobs, ordinary backups, simple health checks, fetch-and-send jobs, or short tasks with no child/file handoff. Those jobs must stay simple.
+章节编号为统一引用契约：1工具、2身份/状态、3等待/恢复、4文章交接、5配图、6发布、7终态。第4—6节只路由到周报专项，具体规则不在两处重复。
 
-This is a narrow execution-reliability layer. It does not schedule or edit Cron jobs, define research/editorial quality, create workflow state, retry business work, run arbitrary business commands, build, commit, push, publish, or deliver notifications.
+## 1. 工具与内容边界
 
-## Fixed helper only
+- 使用已存在、回归测试过的 `scripts/reliable_cron.py`：`wait`、`check-files`、`check-git`、`check-http`。实际调用使用技能目录下绝对路径；接口细节执行前读 [helper-contract.md](references/helper-contract.md)。
+- 研究取证先读 [research-contract.md](references/research-contract.md)，执行其中的实际provider核对、正文降级/复用与公开GitHub认证GET流程。web_search/web_fetch/browser及主题已要求的Serper/Tavily/Exa仅经当前可用一等工具或该文件列出的固定入口调用，不把服务名当工具名，不授权任意exec研究。适配器不能代替充分阅读来源，搜索摘要不冒称全文；运行时权限与审批仍优先。
+- 正文、front matter、笔记、账本、状态、标记用read/write/edit/apply_patch分块落盘；研究分片每片1—2对象/主题，不以缩短内容代替分块，read截断必须续读。
+- 已成型文件可用独立cp；业务工具、输出路径和参数由任务明确授权，周报固定工具见专项参考。路径含空格时逐参数引用。
+- 任务运行期间禁止heredoc、内联Python/Node、/tmp临时脚本、日期专用执行脚本、手写for/while/sleep轮询，禁止创建/改写.py/.sh。一个exec一个清晰动作，不将复制、INDEX、校验、构建、Git、HTTP拼成长链或循环。不安装依赖、不改工具/凭据/配置，不执行下载文件、宏或嵌入对象。**一个exec一个动作不等于一个模型轮次只能调用一个工具**：同阶段互不依赖且已获准的只读read/exec可在同一轮并行；结果有依赖时先等待前置证据。不得据此引入工具名白名单、扩大权限、使用长shell链，或并行写同一文件/共享仓库；写入与外部副作用仍按唯一写入者和既定顺序串行。
+- 一等工具按本次schema，CLI按已核验入口及真实help填写本期参数，不猜不存在的flag。参数/路径错误先查接口后修正一次明确调用；内容校验失败只小修输入再重验；429/暂时连接失败尊重Retry-After、预算与已授权备用；401/403/审批拒绝保留证据、不绕过。能力缺失另行维护，不现场造工具或关闭检查。没有某工具不等于没有所有搜索服务。
+- 后台任务accepted后接回同一任务，不重复生成/派发；发送或push结果未知先核实，不盲重做。非必要诊断失败保留，不用新成功工具盖错。
 
-Use the bundled, regression-tested helper:
+## 2. 运行身份与阶段证据
 
-```bash
-python3 scripts/reliable_cron.py --help
-```
+- 先登记本期/本次逻辑任务、具体时间窗、预期文件清单、适用仓库与URL，检查是否为已有运行的恢复。**新Cron会话/执行ID不等于新一期**；isolated不继承聊天业务上下文，REF所指已应用规范和主题必须实际读取，不能靠旧对话或pending提案执行。
+- **新逻辑运行**创建唯一、初始为空的绝对目录和run_id；**恢复同一次运行**沿用原run_id/目录及原报道窗口，绝不另建空目录重做相同研究，不按恢复当天重算窗口，不清空已有目录。只记录环境真实提供的执行标识，不猜造内部ID。
+- 分片、母稿、文章、账本、标记、审计的真实路径与输入版本在派发前告知全部生产者/消费者。任务合同保存为本run内可读取的实体，列窗口、范围、引用规则路径及SHA、质量标准、工具入口、产物清单、唯一写入范围和停止条件；合同自身SHA记父审计，不另建总账。路径缺失或版本不符不静默替代。规则快照不能覆盖当前更高优先级安全要求。
+- 历史兼容路径只能在本期来源及版本对应关系确证后采用，登记映射；不能因旧文件存在或mtime新就算本次完成。周报公开文章名/URL不添加run_id。
+- 一个阶段/文件只有一个写入者。正文可先写暂存文件并以同文件系统独立rename/mv完成交接；也可按工具能力写独立分片，再在完整性核验后最后写完成标记。后者是协议性屏障，不声称文件工具具备原子写保证。未交接分片只能作进度，不能发布；已经交接的版本不继续修改。需要修订时建立新版本并使受影响下游旧验收失效。
+- 沿用现有审计中的唯一“当前阶段”区块。每次阶段进入、生产者交回、父级验收或外部发布结果确认后，先更新该区再开始下一边界，不留到final补记；同文件合并记录，不抄第二份总账。每阶段单一PENDING/RUNNING/PASS/BLOCKED，局限及辅助/通知可WARNING，不适用写N/A。字段保留run_id、时间窗、阶段、输入/输出路径及版本/SHA、证据路径、缺口、下一步，增加checked_at和当前owner；阶段开始/结束、生产者ready_at与父级accepted_at分记，有证据才填，无证据写unknown，mtime不冒充完成时间。真实构建开始/退出及返工原因记证据引用，章节进度留原映射；规则与输入未变不重抄工具输出。具体业务阶段由任务指定，周报见专项。计时只比较已观测区间；并行段不相加，累计cache读取不当唯一上下文或费用，缺失的轮次/usage不猜填。
+- `.done`只表示生产者结束并交回，不是父任务质量验收。先完成本职责全部内容、自查、版本核对与审计更新，再最后写单一当前 `status: PASS` 或 `status: BLOCKED` 标记，带run_id、产物清单/版本、对象/来源数或适用计数、完成时间、缺口、审计路径及写权交回声明。标记写入成功后直接返回简短非空final assistant文本，不再重读全稿、复述映射、追加复盘或非必要诊断；写入失败或发现真实错误则按版本规则修复，不假称交回。BLOCKED可以交回标记，不得伪装PASS；标记和父审计引用已有证据，不重复抄内容证明。
+- 当前标记不混放历史PASS/BLOCKED；历史移入原审计。父任务读取status、版本与业务证据；文件大小、行数、子会话success、口头结论不能证明质量。修改输入或规则后只重验受影响边界，保留同一期同输入版本仍有效的证据，不无关上游全量重跑。章节通过只表示原映射中的进度，不等于全刊通过。子BLOCKED中的有效对象可逐项验收；普通数据局限按统一准出标准处置，不沿用旧双源或数量硬闸。
 
-Do not synthesize ad-hoc polling loops, wrapper scripts, or shell process-kill logic at runtime.
+## 3. 子任务等待与恢复
 
-## Run contract
+- isolated Cron遵守其运行时工具限制，不调用sessions_yield、不依赖异步完成事件继续发布；保留已有对此工具的排除，不在任务中修改工具策略。交互会话按运行时要求等待，不套用Cron规则。这是当前任务合同，不声称OpenClaw不支持Cron子任务。
+- 每个职责明确的子任务只启动一次，登记taskName、输入版本、产物清单、独立写入范围。派发前在第2节已有合同写明并在委派正文直接传入：父原截止 `deadline_at`（含时区及启动/总预算依据）、核对时刻 `checked_at`、剩余秒数 `remaining_seconds`、尚须完成的下游验收/发布边界及预留 `reserve_seconds`、本子可用秒数、唯一负责人和交回条件。剩余量按父原截止减当前时刻重算；预留参考可比阶段的已观测耗时并记录依据，无样本则标估计与不确定性，不虚构固定分钟硬闸。缺截止依据先补合同，不带unknown预算派发；剩余量扣预留后非正，按本节预算不足交回恢复点。参数逐项核对当前sessions_spawn schema；支持时将runTimeoutSeconds设为不超过本子可用量的正整数并遵守已有更小上限，不传0、不重置父预算或修改已配置总时限。子任务在首次已有进度中确认收到预算，不另建回执文件或等待确认循环；缺失先报告父级补齐，不能自行领满额时限。非Cron且确无父墙钟截止的交互任务明确记不适用，仅记录实际已知子时限，不虚构父截止。
+- sessions/subagents查询为空时先核对visibility；受会话树限制的空结果不证明旧写入者已经结束，不据此重复派发或覆盖文件。
+- 唯一等待命令：`python3 <技能绝对目录>/scripts/reliable_cron.py wait --file <绝对目录/组.done> --timeout 600 --interval 30 --min-bytes 1`。多标记重复--file明确枚举；--min-bytes只出现一次且为1。正文/账本不混进wait。600秒只是检查段，受剩余总预算约束，必要时缩短本段，不修改任务总预算；不为不同主题维护另一套固定等待时限。
+- 同一阶段只有一个wait进程。用process确认自然结束，再进入验收、下一段等待或发布；不手写轮询、不kill正常等待。helper自己的有界worker清理不属于这条禁令。
+- 每次wait自然返回后独立check-files，按相同最小字节阈值分组，枚举全部预期文件；再read单一status、版本及业务证据。helper仅证明检查时打开inode的元数据，不证明来源、语义、精确glob数量或之后路径稳定。
+- WAIT_TIMEOUT是检查点而非失败，exit0仍须读JSON中的ok:false。只检查当前简明进度、版本变化与缺项；必要时一次有界任务状态查询，不在每个检查点重读未变化全稿、长篇历史或循环查状态。还在产出且预算允许则下一段固定wait；不因25分钟或任一次等待超时自动补搜/重派。最终必要全文及周报article-baseline.md、article-second-pass.md、article-traceability.md三材料的语义验收不减。
+- 等待、编辑、复核、构建及发布均占本次Cron墙钟预算，等待不会暂停/重置预算；它不同于子任务超时、模型idle timeout和工具请求时限。阶段准备、交接、wait检查点或补缺前，按本节派发合同在现有审计重算当前时刻、原截止、剩余量及下游预留，记录核心缺口与下一有界步骤；传给接续执行者，不能只留在父级审计。证据齐全即交接，不为重复补搜、额外润色或跑满预算空等；时间压力不降低研究准入、全文验收或发布验证要求。
+- **恢复顺序**：定位原run及清单 → 文件检查 → 复用同一期同输入版本且确认未变的既有语义验收 → 必要时检查写入者状态作辅助 → 独立核验适用构建/Git/HTTP/交付 → 从第一处未验证边界继续。接管或补缺前必须确认原写入者已经终止且其产物与目标输入版本对应；父任务结束、超时、Gateway重启或会话不可见不足以证明全部子任务/外部写入者已停。
+- 确认原写入者结束且确有必要缺口后，只补列明缺项，用独立新分片交回，由父任务合并。写入者活跃或状态不明不派重叠替补、不改其文件；记录阻塞。普通欠证先限述或隔离，不因超时编造或隐瞒局限。迟到结果只可更新匹配期次、输入版本和职责的证据，不能将已验证发布倒退成仍在编辑。
+- 文件完整但标记缺失/子状态failed：先确认无活跃写入，再核验同一输入版本的清单与内容；通过后父任务可写自己的验收标记，标明接管者/证据，不冒称原子任务成功。标记PASS而内容未过仍不得进入下游。
+- 原生重试/重启后的重新执行不是业务断点续做；无论怎样被唤起都先核对已有成果。业务BLOCKED不等于原生error，正常返回阻塞文字不会自动保证触发错误重试/告警；不故意制造工具错误触发重试，不叠加续办Cron、不改历史状态。
+- 总预算不足则记录缺失边界、已完成部分、恢复点并结束，不无限等待、不承诺未经建立的未来续跑。网络/主机中断后重验外部状态与版本，不重复已经验证的生成、commit或push。
 
-1. Create a unique, initially empty, absolute run directory for each invocation.
-2. Put only current-run artifacts in it. Write artifact bodies to temporary names, atomically rename them into place, and write completion markers last.
-3. Start each child task once. A child that writes its files must also return a short final assistant message; do not stop on a tool result.
-4. Wait only with the bundled `wait` command. `WAIT_TIMEOUT` is a checkpoint, not a task failure.
-5. After every wait, run `check-files`. File checks prove only point-in-time metadata for the inode opened during inspection. They do not prove semantic correctness, provenance, expected glob cardinality, or later path stability.
-6. Apply existing business validators separately. A completion marker is not a substitute for semantic validation.
-7. Run existing build, commit, push, or publish commands directly when the business task requires them. This skill does not generate or execute those commands.
-8. Run `check-git` and `check-http` only when a repository or public URL is actually part of the task.
-9. Classify the final result as `SUCCESS`, `SUCCESS_WITH_WARNINGS`, or `BLOCKED` from durable evidence. Notification failure must not overwrite verified publication success.
-10. Before retrying work, inspect current-run evidence first to avoid duplicate work or publication.
+## 4. 文章交接（周报专项入口）
 
-## Recovery order
+仅周报/研究报告：执行 `references/weekly-publication.md` 的“4. 文章交接”。通用任务跳过。本节不再维护第二套编辑规则。
 
-When a run appears stalled or failed, do not improvise a recovery script. Follow this order:
+## 5. 配图（周报专项入口）
 
-1. Identify the current unique run directory and expected artifact manifest.
-2. Inspect current-run completion markers and artifacts with `check-files`.
-3. Run the task's existing semantic validators separately.
-4. Check whether the child is still active only as supporting evidence; session status is not authoritative.
-5. Verify applicable build, Git, HTTP, and delivery boundaries independently.
-6. Resume from the first unverified boundary; do not repeat already verified work.
-7. Classify the terminal result from evidence, not from the last tool error.
+仅周报/研究报告：执行 `references/weekly-publication.md` 的“5. 配图”。通用任务由自身交付契约决定是否需要图片。
 
-For symptom-specific handling, read `references/common-failure-playbook.md`. It is a generic incident playbook, not a business workflow.
+**isolated Cron 父级不得在本回合直接调用 `image_generate`。** 这类任务的 `toolsAllow` 白名单通常含 `image_generate` 却不含 `sessions_yield`；父级提交异步生图后无法让出回合声明，媒体完成唤醒会与其仍活跃的回合冲突（`ActiveTurnClaimError: Session <id> already has an active turn claim`），并把原生运行打成 `error`（`agent run aborted | OPENCLAW_DIRECT_ABORT`），而当时业务产物往往已经做完。配图改由专用配图子会话提交并让出回合，父级只做核验与搬运。
 
-## Commands
+配套约束：子会话的唤醒回合是只读的（无 write/exec），故文件搬运与完成标记一律由父级核验后自行落盘；父级取图用一次 `ls /root/.openclaw/media/tool-image-generation/`（按 filename 前缀匹配）或读子会话 final 取得绝对路径，核验存在、非空、与本期内容相关后再复制。**绝不为等图给 Cron 父级放开 `sessions_yield`**：实测让出会立即结束本次运行（会话在让出后立刻返回 `end_turn`），父级会在报告完成前收工。取不到图按专项第5节降级，不回头由父级直调。
 
-### `wait`
+## 6. 发布（按任务选择）
 
-```bash
-python3 scripts/reliable_cron.py wait \
-  --file /absolute/run/completed.marker \
-  --glob '/absolute/run/part-*.data' \
-  --timeout 1800 \
-  --interval 30 \
-  --min-bytes 1
-```
+- 周报/研究报告完整执行 `references/weekly-publication.md` 的“6. 固定发布顺序”，不在本节复制整份参数或维护相反顺序。weekly_ops检查接口、阶段参数、JSON与退出边界只在 [weekly-ops-contract.md](references/weekly-ops-contract.md) 定义；本地清单不能代替语义验收、真实构建、双仓真实远端、线上当前版本或announce。
+- 其他长任务仅按已批准业务流程执行所需命令，在存在仓库/公网URL边界时使用helper检查；不无端套用Jekyll、双仓或头图。
+- reliable_cron.py接口和JSON/退出码仅定义于 [helper-contract.md](references/helper-contract.md)。检查失败不得通过绕过安全限制或伪造成功解决。
 
-- All exact files must exist, be regular non-symlink files, and meet `--min-bytes`.
-- Every matched glob item must also pass; an empty glob is not success.
-- For an exact expected set, enumerate every item with `--file`; a glob cannot prove count.
-- Timeout emits one JSON line with `status: "WAIT_TIMEOUT"` and exits `0` so the Cron turn can inspect evidence naturally.
+## 7. 终态与证据优先级
 
-### `check-files`
+- 在既有审计中分开记录**内容准出、发布阶段、原生运行、投递状态**。业务SUCCESS：所有适用核心内容、构建、Git、线上版本要求通过；SUCCESS_WITH_WARNINGS：核心交付已验证但有透明研究局限、辅助告警或通知失败/未知；BLOCKED：按统一准出标准确有未解决内容风险，或所需发布阶段尚无成功证据。发布受阻只限制对应步骤及整体完成声明，不回改已经通过的研究或已完成部分；继续可独立执行的后续工作并汇报成果。平台ok不证明业务成功，delivered不证明上线或用户已读。
+- 投递状态只按实际证据填写，尚未发生的投递为PENDING。周报的announce、message例外与最终汇报要求只按 [周报专项第7节](references/weekly-publication.md#7-周报终态与announce交付)。
+- 已验证发布不因通知失败回改；只补通知，不重做研究/生图/提交。若具体业务合同明确要求通知完成，整体交付可BLOCKED，但已验证发布状态不回改。阻塞时写清“已推送、上线未确认”“稿件完整、局部保真待修”等部分状态与下一步，不只报失败。
+- 当前有效文件优于不可靠子会话状态；子会话成功但关键内容文件缺失仍不能冒称完成。文件来自本run且内容验收通过时，子状态failed通常只作WARNING；无写入者且仅交接标记缺失可按第3节接管补记。机械检查永不覆盖内容验收；旧文件不能凭存在充作当前证据。
+- 非关键诊断或通知失败不能抹掉已验证发布；业务终态与调度器原生ok/error/skipped分开。不得用新成功工具盖错、修改历史状态或声称自动恢复/共享发布锁已实现。
+- 必要HTTP重试耗尽不重复push；记清已推送但未确认。
+- 核心证据齐全立即输出简短非空final assistant结论，不止于toolUse。非周报或明确例外已经用message交付时遵守渠道去重。不得以异常为由编造事实或发布结果。
 
-```bash
-python3 scripts/reliable_cron.py check-files \
-  --file /absolute/run/completed.marker \
-  --file /absolute/run/final-artifact.data \
-  --min-bytes 1
-```
-
-Missing, empty, non-regular, or symlinked paths fail mechanically. This command does not validate meaning.
-
-### `check-git`
-
-```bash
-python3 scripts/reliable_cron.py check-git \
-  --repo /absolute/repository \
-  --remote origin \
-  --branch main \
-  --verify-remote \
-  --command-timeout 30
-```
-
-- The named branch must be checked out; detached HEAD or another branch fails.
-- Requires a clean worktree, no merge/rebase/cherry-pick/revert/bisect state, and local `HEAD` equal to the selected remote branch.
-- `--verify-remote` uses `git ls-remote` rather than trusting a cached tracking ref.
-- Before/after snapshots must agree; observed concurrent repository change fails conservatively.
-- Each Git command runs in a process group. Timeout or interruption sends TERM then KILL and emits redacted evidence.
-
-### `check-http`
-
-```bash
-python3 scripts/reliable_cron.py check-http \
-  --url https://example.com/published-resource \
-  --attempts 5 \
-  --interval 10 \
-  --request-timeout 20 \
-  --total-timeout 120
-```
-
-- Only credential-free public HTTP(S) destinations are allowed. Any non-global DNS answer fails.
-- Every redirect and final URL are revalidated; validated DNS answers are pinned against rebinding.
-- Query strings and fragments are omitted from output; exception text is normalized and redacted.
-- Request and total deadlines include bounded worker lifecycle accounting. Fixed cleanup grace may slightly exceed the requested deadline and fails conservatively.
-
-## Exit and output contract
-
-Every invocation writes exactly one JSON object to stdout.
-
-- validated success: exit `0`, `ok: true`;
-- `WAIT_TIMEOUT`: exit `0`, `ok: false`, because it is a nonfatal checkpoint;
-- invalid arguments, failed mechanical checks, or checker-internal failures: exit `2`, `ok: false`;
-- SIGINT or SIGTERM: clean active Git/HTTP workers, emit `status: "INTERRUPTED"`, and exit `130`.
-
-Do not use stderr parsing or prose matching as task evidence.
-
-## Final evidence report
-
-Report only applicable rows; use `N/A` rather than inventing passes:
+最终证据报告只填适用项，不适用写N/A：
 
 ```text
-Run directory: /absolute/run/unique-id
+Run directory: /absolute/run/id
 Child/file handoff: PASS | WARNING | BLOCKED | N/A
 Mechanical files: PASS | BLOCKED | N/A
 Business validators: PASS | BLOCKED | N/A
 Build: PASS | BLOCKED | N/A
 Git publication: PASS | BLOCKED | N/A
 HTTP publication: PASS | BLOCKED | N/A
-Delivery: PASS | WARNING | N/A
-Final: SUCCESS | SUCCESS_WITH_WARNINGS | BLOCKED
+Delivery: PENDING | PASS | WARNING | BLOCKED | N/A
+Final (business): SUCCESS | SUCCESS_WITH_WARNINGS | BLOCKED
 ```
 
-## Evidence precedence
-
-- Valid current-run files outweigh an unreliable child-session status.
-- A child marked successful without required files is `BLOCKED`.
-- A child marked failed after producing all validated current-run artifacts is normally a warning.
-- Mechanical checks never override semantic validators.
-- Old artifacts outside the unique run directory are not evidence for the current run.
-- A late noncritical diagnostic or delivery failure must not erase independently verified success.
+周报在上述适用证据项之外，补充专项第7节规定的研究/文章及公开链接信息。
