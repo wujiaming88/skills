@@ -24,7 +24,7 @@
 
 ## 3. 对照工具权限与执行合同
 
-将`toolsAllow`与实际读取到的执行合同逐项对照：必需工具须获准，明确禁止的工具须从白名单排除，而不是只在Prompt里写“不要调用”。特别检查isolated任务没有`sessions_yield`；普通周报以runner的announce结束时，若Prompt禁止主动发送，则任务执行白名单不保留仅用于该主动发送的`message`。runner的delivery/failureAlert不依赖任务调用`message`。
+将`toolsAllow`与实际读取到的执行合同逐项对照：必需工具须获准，明确禁止的工具须从白名单排除，而不是只在Prompt里写“不要调用”。特别检查isolated任务没有`sessions_yield`；白名单含异步完成型工具（如`image_generate`）时，另须确认执行合同把该调用交给可让出回合的子会话，而不是由父级本回合直调：父级既无`sessions_yield`又发起异步任务，完成唤醒会撞上它仍活跃的回合，把原生运行打成`error`，而业务产物通常已经完成（机制与配套约束见主文件第5节）。这类缺口不要用两个看似省事的改法——给父级补`sessions_yield`会让本次运行在报告生成前收工；从白名单删掉该工具又因子会话继承父级工具策略上限，使子会话同样无法调用。普通周报以runner的announce结束时，若Prompt禁止主动发送，则任务执行白名单不保留仅用于该主动发送的`message`。runner的delivery/failureAlert不依赖任务调用`message`。
 
 记录未知、已退役或当前schema没有的工具名；它们不能证明能力可用。不要为整齐而删除用途尚未核实的工具，修改权限须有执行合同依据并取得本次修改授权。
 
