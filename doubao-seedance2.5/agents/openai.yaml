@@ -1,0 +1,4 @@
+interface:
+  display_name: "Doubao Seedance 2.5"
+  short_description: "理解视频创作意图，使用官方 API 生成、编辑、延长视频并管理任务"
+  default_prompt: "使用 $doubao-seedance2.5 理解我的视频创作需求，选择正确的任务类型和素材角色，调用官方 API 生成并交付视频。"

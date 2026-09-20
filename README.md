@@ -2,7 +2,7 @@
 
 面向 AI Agent 的技能集合：把开发、研究、写作、设计和运维中的可复用方法，整理成可读取的操作流程、参考资料与配套脚本。
 
-当前收录 **19 个 Skill，分为 6 类**。每个 Skill 保持独立的顶层目录；本页按主要用途分类，不改变安装路径。点击名称可查看对应的 `SKILL.md`。
+当前收录 **20 个 Skill，分为 6 类**。每个 Skill 保持独立的顶层目录；本页按主要用途分类，不改变安装路径。点击名称可查看对应的 `SKILL.md`。
 
 ## 分类导航
 
@@ -10,7 +10,7 @@
 | --- | ---: | --- |
 | [开发与界面设计](#development) | 4 | 编码规范、工程质量、变更验证、前端需求落地 |
 | [内容与演示](#content) | 4 | 报告转文章、模板风格 PPT、小红书文案与封面 |
-| [图像与可视化](#visuals) | 5 | 模型生图、图片编辑、架构图、网页高清截图 |
+| [图像、视频与可视化](#visuals) | 6 | 模型生图、图片编辑、视频生成与编辑、架构图、网页高清截图 |
 | [研究与投资分析](#research) | 1 | 宏观、行业、公司、政策与投资风险研究 |
 | [教育与考试](#education) | 3 | 高考志愿建议、软考真题检索、论文练习 |
 | [OpenClaw 运维与可靠性](#operations) | 2 | 运行诊断、性能分析、长时 Cron 任务验收与恢复 |
@@ -41,17 +41,18 @@
 
 <a id="visuals"></a>
 
-## 图像与可视化
+## 图像、视频与可视化
 
 | Skill | 主要用途 | 依赖或边界 |
 | --- | --- | --- |
 | [custom-imagegen](./custom-imagegen/SKILL.md) | 通过自定义 OpenAI 兼容接口生成、编辑图片，支持多图输入、遮罩与 JSONL 批量任务。 | 需配置服务地址、模型和凭据；实际能力取决于服务端。支持先做 dry run。 |
+| [doubao-seedance2.5](./doubao-seedance2.5/SKILL.md) | 理解视频创作意图，调用火山方舟官方 API 生成、编辑、延长视频并管理任务，支持首尾帧与多模态参考。 | 固定模型 `doubao-seedance-2-5-260628`；Python 3.10+，密钥从 `SEEDANCE_API_KEY` 读取；实际搜索执行需检查用量。 |
 | [nova-canvas](./nova-canvas/SKILL.md) | 通过 AWS Bedrock 调用 Amazon Nova Canvas 生成图片。 | 需要 AWS 凭据与模型访问权限；本 Skill 不处理图片编辑或视频生成。 |
 | [stable-image-ultra](./stable-image-ultra/SKILL.md) | 通过 AWS Bedrock 调用 Stable Image Ultra 或 Stable Diffusion 3.5 Large 生图。 | 适合照片、插画等视觉素材；需要对应模型权限，不适合精确文字图表。 |
 | [svg-architecture-diagram](./svg-architecture-diagram/SKILL.md) | 用 SVG 绘制架构、组件、流程与数据流图，保留明确标签和连接线。 | 使用 HTML/SVG 与 Playwright 渲染；适合结构和文字必须准确的技术图。 |
 | [web-render-screenshot](./web-render-screenshot/SKILL.md) | 将 HTML 页面、界面原型、数据图表或信息图渲染为高清 PNG/JPEG。 | 使用 Playwright/Chromium；重点是结构化页面与可读文字，不是模型生图。 |
 
-**怎么选：** 照片或插画按已配置的模型服务选择生图 Skill；需要改图或接自定义接口时看 `custom-imagegen`；精确架构关系用 `svg-architecture-diagram`；文字、表格和 UI 导出用 `web-render-screenshot`；固定小红书品牌图用 `xhs-cover-maker`。
+**怎么选：** 照片或插画按已配置的模型服务选择生图 Skill；需要改图或接自定义接口时看 `custom-imagegen`；视频生成、编辑或延长用 `doubao-seedance2.5`；精确架构关系用 `svg-architecture-diagram`；文字、表格和 UI 导出用 `web-render-screenshot`；固定小红书品牌图用 `xhs-cover-maker`。
 
 <a id="research"></a>
 
