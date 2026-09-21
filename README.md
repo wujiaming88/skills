@@ -2,14 +2,14 @@
 
 面向 AI Agent 的技能集合：把开发、研究、写作、设计和运维中的可复用方法，整理成可读取的操作流程、参考资料与配套脚本。
 
-当前收录 **21 个 Skill，分为 6 类**。每个 Skill 保持独立的顶层目录；本页按主要用途分类，不改变安装路径。点击名称可查看对应的 `SKILL.md`。
+当前收录 **24 个 Skill，分为 6 类**。每个 Skill 保持独立的顶层目录；本页按主要用途分类，不改变安装路径。点击名称可查看对应的 `SKILL.md`。
 
 ## 分类导航
 
 | 分类 | 数量 | 适用任务 |
 | --- | ---: | --- |
-| [开发与界面设计](#development) | 4 | 编码规范、工程质量、变更验证、前端需求落地 |
-| [内容与演示](#content) | 4 | 报告转文章、模板风格 PPT、小红书文案与封面 |
+| [开发与界面设计](#development) | 6 | 编码规范、工程质量、变更验证、端到端测试、发布日志、前端需求落地 |
+| [内容与演示](#content) | 5 | 报告转文章、模板风格 PPT 与视觉优化、小红书文案与封面 |
 | [图像、视频与可视化](#visuals) | 7 | 模型生图、图片编辑、视频生成与编辑、架构图、网页高清截图 |
 | [研究与投资分析](#research) | 1 | 宏观、行业、公司、政策与投资风险研究 |
 | [教育与考试](#education) | 3 | 高考志愿建议、软考真题检索、论文练习 |
@@ -26,6 +26,8 @@
 | [karpathy-coding-guidelines](./karpathy-coding-guidelines/SKILL.md) | 用明确假设、简单实现、局部修改和可验证目标，减少 AI 编码中的常见偏差。 | 适合需要轻量编码准则的开发、修复和审查任务。 |
 | [software-engineering-discipline](./software-engineering-discipline/SKILL.md) | 对维护型代码约束改动范围、抽象程度、接口契约、迁移安全与风险测试。 | 面向需要持续维护的项目；强调真实 API 与实际执行证据。 |
 | [test-code-change](./test-code-change/SKILL.md) | 从变更影响和失败风险出发制定并执行验证，报告覆盖、缺口与残余风险。 | 用于已授权代码变更或明确要求的测试验证审计，不用于普通仓库浏览。 |
+| [e2e-testing-patterns](./e2e-testing-patterns/SKILL.md) | 用 Playwright/Cypress 搭建可靠的端到端测试：页面对象、夹具、等待策略、网络拦截、视觉回归、分片与可访问性验证。 | 面向关键用户流程的自动化测试；需要 Node.js 与浏览器依赖，不替代单元测试和人工探索。 |
+| [changelog-automation](./changelog-automation/SKILL.md) | 按 Keep a Changelog 与 Conventional Commits 生成变更日志和发布说明，覆盖 semantic-release、git-cliff、commitizen 等工作流。 | 用于仓库发布流程标准化；需要团队先统一提交规范，发布前仍需人工确认内容。 |
 | [translate-ui-intent](./translate-ui-intent/SKILL.md) | 把“简洁、紧凑、高级感”等模糊意图转成可实现的界面决策，并做视觉验证。 | 已有产品优先沿用设计系统；可交付设计契约，也可用于界面实现。 |
 
 <a id="content"></a>
@@ -36,6 +38,7 @@
 | --- | --- | --- |
 | [report2article](./report2article/SKILL.md) | 将研究报告、周报编辑为读者文章，或优化既有文章的结构、表达和配图。 | 以双清单和全文语义核对保留事实、来源及限定；同时避免标题过碎与层次缺失，不代替新增研究。 |
 | [ppt-from-template](./ppt-from-template/SKILL.md) | 从参考 PPT/PDF 提取视觉风格，用 PptxGenJS 重新生成演示文稿。 | 需要样式参考及外部 `pptx` Skill、PptxGenJS、Python/转换工具；不是直接修改原 PPT。 |
+| [ppt-design](./ppt-design/SKILL.md) | 针对配色、字体搭配、布局网格、图表类型和视觉层次给出 PPT 设计建议与优化清单。 | 只输出设计建议、检查清单和问题解法，不生成或修改 PPT 文件；需要成品时配合 `ppt-from-template`。 |
 | [xhs-content-forge](./xhs-content-forge/SKILL.md) | 将技术长文或选题改为小红书笔记包：标题、正文、配图清单、标签与封面变量。 | 内置“五岳 AI 虚拟公司”过程纪实定位；不负责自动发布，配图可交给下方 Skill。 |
 | [xhs-cover-maker](./xhs-cover-maker/SKILL.md) | 按固定品牌版式制作小红书封面、要点图和金句卡。 | 使用 HTML/CSS、WeasyPrint、Poppler 与 Pillow 渲染；品牌和版式有预设，不是通用创意设计器。 |
 
@@ -132,7 +135,7 @@ openclaw skills info report2article --agent main
 | 将投研成果转成可读文章 | `deep-investment-research` → `report2article`；需要技术架构图时再加 `svg-architecture-diagram` |
 | 把文章拆成小红书内容 | `xhs-content-forge` → `xhs-cover-maker` → 人工发布 |
 | 改进现有产品界面并验证 | `translate-ui-intent` + `software-engineering-discipline` → `test-code-change` |
-| 将已有内容制作成演示稿 | 准备内容与参考模板 → `ppt-from-template` |
+| 将已有内容制作成演示稿 | 准备内容与参考模板 → `ppt-from-template`；需要视觉建议时先过一遍 `ppt-design` |
 | 排查复杂定时任务交付问题 | `openclaw-diagnostics` 辅助定位 → `cron-run-reliability` 核对当前运行证据 |
 
 <a id="maintenance"></a>
