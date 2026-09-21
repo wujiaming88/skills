@@ -22,7 +22,7 @@ provider按主题允许入口选择实际支持的tavily或exa；参数分别引
 
 ## 2. 取得并复用正文
 
-1. 按`web_fetch → 官方导航/已发现的Markdown入口 → 固定Tavily raw_content → 必要时browser`补取；某层已充分取得即停止，不为走完链条重复请求。动态网页可直接使用browser，先读其技能并检查status/tabs；默认text选取不适用时选择实际存在的正文元素，不把未命中selector当浏览器失效。登录、验证码和权限拦截交由人工，不绕过。
+1. 按`web_fetch → 官方导航/已发现的Markdown入口 → 固定Tavily raw_content → 必要时browser`补取；某层已充分取得即停止，不为走完链条重复请求。**文档站的Markdown入口要主动取，不等HTML失败后再试**：在页面URL后加`.md`取孪生页，并先读站点`llms.txt`索引定位具体页面。实测这类文档站的HTML版会因页面过大只回传不完整响应（`Response body incomplete`），提取后常只剩导航，spill续读也补不回正文表格，而同一页的`.md`版一次即可取全；因此HTML层取得内容过短不证明该页无内容或来源不存在，改取Markdown孪生页而不是记成缺口。动态网页可直接使用browser，先读其技能并检查status/tabs；默认text选取不适用时选择实际存在的正文元素，不把未命中selector当浏览器失效。登录、验证码和权限拦截交由人工，不绕过。
 2. Tavily正文读取使用以下已核参数，并确认目标URL匹配且`results[].raw_content`非空；provider回退后缺少raw_content不算恢复。`cached=false`只证明本地缓存未命中，不能证明供应商无缓存。
 
 ```sh

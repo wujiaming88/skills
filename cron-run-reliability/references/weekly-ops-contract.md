@@ -32,6 +32,8 @@
 
 **交接与源文件契约**：report、article、done、INDEX、blog须为当前非空安全文件；普通文本为UTF-8且文本源满足单LF EOF。research.done与article.done须各有且只有一条顶格 `status: PASS`、`run_id: <本期run_id>`、`source_sha256: <完整report SHA256>`；article.done另须唯一顶格 `article_sha256: <完整article SHA256>`，任意BLOCKED均拒绝。archive-file必须位于archive-repo内并与冻结report完整字节一致；INDEX.md必须在index-date对应表格中有指向该archive-file的精确链接。blog必须位于blog-repo内、front matter有效，且去掉唯一外壳后正文与冻结article完整字节一致；front matter引用的博客头图须位于根内，并与绝对冻结image完整字节一致。
 
+**文本级拒绝项**：除字节契约外，report与blog的正文还须含「第 」与「 期」的期次标记，且不得含 `第 N`、`第 X`、字面 `TODO`、字面 `待补`、字面 `\n` 及已知截断片段；blog还须含 `report` 文件名日期前缀（YYYY-MM-DD）。`待补` 是自然会写出的编辑用语（如「待补证」），一旦出现即阻断，改用证据标准用语「本次未取得」；同理 `第 N`/`第 X` 应写实际期次。blog另拒裸 URL（须写成 markdown 链接）、缩进表格行、渲染表格数与源不一致，以及内部协作标记（分组代号、产出人代号、资料库目录名等）。**精确标记清单以校验器实现为准**，改动文字前先读其对应拒绝项，不凭记忆枚举，也不为通过而删正常正文。
+
 **prebuild**：不传 `--site --build-started-at --html-text`；聚合上述done/SHA、完整归档字节、INDEX、文章正文、front matter、头图、EOF与源版validate-blog-post。结果 `LOCAL_SOURCE_CHECKLIST_PASS`（exit0）或 `LOCAL_SOURCE_CHECKLIST_BLOCKED`（exit1）。本入口未替代check-inputs的整文件空白扫描，也未包含check-publication-params的配置/栏目检查，分别在各自边界执行，不误称已聚合。
 
 **postbuild**：在共用参数上必须再传 `--site <当前构建根绝对路径> --build-started-at <带时区ISO-8601真实构建开始时间> --html-text <探针>`；html-text可重复，每项必须是非空且来自本期冻结article的正文纯文本，并须出现在当前构建HTML可见文本中。site须为当前绝对构建根；HTML路径按本期post/permalink推导，构建头图与冻结image完整字节一致，HTML不得早于真实build开始或当前发布输入，并执行site版validate-blog-post。不得用旧audit、保存的helper输出或单独mtime代替本次真实build exit0与当前输入绑定。

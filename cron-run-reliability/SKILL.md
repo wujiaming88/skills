@@ -19,7 +19,7 @@ description: "审计长时isolated Cron配置，执行文件交接、等待、�
 
 - 使用已存在、回归测试过的 `scripts/reliable_cron.py`：`wait`、`check-files`、`check-git`、`check-http`。实际调用使用技能目录下绝对路径；接口细节执行前读 [helper-contract.md](references/helper-contract.md)。
 - 研究取证先读 [research-contract.md](references/research-contract.md)，执行其中的实际provider核对、正文降级/复用与公开GitHub认证GET流程。web_search/web_fetch/browser及主题已要求的Serper/Tavily/Exa仅经当前可用一等工具或该文件列出的固定入口调用，不把服务名当工具名，不授权任意exec研究。适配器不能代替充分阅读来源，搜索摘要不冒称全文；运行时权限与审批仍优先。
-- 正文、front matter、笔记、账本、状态、标记用read/write/edit/apply_patch分块落盘；研究分片每片1—2对象/主题，不以缩短内容代替分块，read截断必须续读。
+- 正文、front matter、笔记、账本、状态、标记用read/write/edit/apply_patch分块落盘；研究分片每片1—2对象/主题，不以缩短内容代替分块，read截断必须续读。**把多份分片汇编成母稿/长文档时逐片处理**：先write建骨架并在尾部留追加锚点，再每读完一片就用edit以该片章节替换锚点、单次写入保持有界（实测约4000字符），不留到读完所有输入再写。一次性读完全部输入再一次性写大文件会以未完成的工具调用/零字节落盘被掐断，只能重派。
 - 已成型文件可用独立cp；业务工具、输出路径和参数由任务明确授权，周报固定工具见专项参考。路径含空格时逐参数引用。
 - 任务运行期间禁止heredoc、内联Python/Node、/tmp临时脚本、日期专用执行脚本、手写for/while/sleep轮询，禁止创建/改写.py/.sh。一个exec一个清晰动作，不将复制、INDEX、校验、构建、Git、HTTP拼成长链或循环。不安装依赖、不改工具/凭据/配置，不执行下载文件、宏或嵌入对象。**一个exec一个动作不等于一个模型轮次只能调用一个工具**：同阶段互不依赖且已获准的只读read/exec可在同一轮并行；结果有依赖时先等待前置证据。不得据此引入工具名白名单、扩大权限、使用长shell链，或并行写同一文件/共享仓库；写入与外部副作用仍按唯一写入者和既定顺序串行。
 - 一等工具按本次schema，CLI按已核验入口及真实help填写本期参数，不猜不存在的flag。参数/路径错误先查接口后修正一次明确调用；内容校验失败只小修输入再重验；429/暂时连接失败尊重Retry-After、预算与已授权备用；401/403/审批拒绝保留证据、不绕过。能力缺失另行维护，不现场造工具或关闭检查。没有某工具不等于没有所有搜索服务。
