@@ -1,0 +1,29 @@
+# Python 字节码缓存（技能自带测试为 unittest，跑一次就会生成）
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 依赖目录与锁文件
+node_modules/
+package-lock.json
+yarn.lock
+
+# 编辑器 / 系统噪声
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# 工具缓存
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 本地临时产物
+*.log
