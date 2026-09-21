@@ -9,17 +9,21 @@ description: 使用火山方舟官方 Seedream 5.0 Pro API 进行文生图、图
 
 ## 理解意图并选择模式
 
+先判定意图，再选模式，最后才谈参数。有输入图片时先问“要不要保留原图”：只把图片当风格、构图、氛围或主体外观的参考、要产出新画面 → 按 `generate` 处理；要求保留其整体或局部 → `edit`。分不清时按 `generate` 处理并一句话说明；误判成 `edit` 会让模型强行保留本不该保留的内容。
+
 从用户需求提取用途、主体、构图/比例、风格、准确文字、参考图分工，以及需要修改和保持的部分。缺少影响结果的关键信息才澄清；其余采用合理默认值并简短说明。
 
-| 用户意图 | 模式与选择 |
+| 用户意图 | 模式与 slug |
 |---|---|
-| 从文字创作图片、海报、插画 | `generate`；默认 2K、standard；在 prompt 中说明比例及画面内容 |
-| 编辑现有图片或融合参考素材 | `edit`；1–10 张图，严格保持图号与输入顺序，写清每张图提供什么 |
-| 指定位置改物体、跨图移动主体 | `edit`；标注图或 prompt 内 `<point>` / `<bbox>`，见提示词指南 |
-| 修改带透明通道的素材并保留透明背景 | `edit --background transparent`；单张已有透明通道的参考图，输出 PNG |
-| 把设计稿拆成可编辑底图与元素 | `layers`；单张 PNG/JPEG，可省略 prompt 自动拆分，默认 size=auto |
+| 从文字创作图片、海报、插画 | `generate`；slug 按用途选，如 `product-mockup`、`ads-marketing`、`illustration-story`；默认 2K、standard；在 prompt 中说明比例及画面内容 |
+| 编辑现有图片或融合参考素材 | `edit`；1–10 张图，严格保持图号与输入顺序，写清每张图提供什么；slug 如 `precise-object-edit`、`compositing` |
+| 指定位置改物体、跨图移动主体 | `edit`；slug `coordinate-edit`；标注图或 prompt 内 `<point>` / `<bbox>` |
+| 修改带透明通道的素材并保留透明背景 | `edit --background transparent`；slug `transparent-edit`；单张已有透明通道的参考图，输出 PNG |
+| 把设计稿拆成可编辑底图与元素 | `layers`；slug `layer-decompose`；单张 PNG/JPEG，可省略 prompt 自动拆分，默认 size=auto |
 
-阅读 [意图与提示词指南](references/intent-and-prompts.md) 处理文字排版、多图、坐标与图层场景。需要精确尺寸、完整 JSON 或排查参数冲突时阅读 [API 能力与约束](references/api.md)。[命令示例](references/examples.md) 提供可直接调整的调用方式。
+需求已经具体时只做结构化归一，不加未被暗示的人物、品牌、标语或情节。
+
+阅读 [意图与提示词指南](references/intent-and-prompts.md)：意图判定规则、意图 slug、提示词结构、具体度策略，以及坐标、多图与图层场景。需要精确尺寸、完整 JSON 或排查参数冲突时阅读 [API 能力与约束](references/api.md)。[命令示例](references/examples.md) 提供可直接调整的调用方式。
 
 能力按需使用：质量优先选 `standard`；用户明确要求更快时选 `fast`。默认保留水印，按用户需求通过 `--no-watermark` 关闭。JPEG适合照片；PNG适合透明素材和需要无损交付的设计稿。不为“利用能力”添加与需求无关的参数。
 
