@@ -10,7 +10,8 @@
 - **路径不符/过期标记**：对照明确清单与run映射，身份或来源不能确证则BLOCKED；不以广泛历史扫描猜路径。只有新逻辑运行目录要求初始为空，恢复保留原目录和证据。
 - **辅助诊断/通知失败**：按第7节单独WARNING，保留已验证发布；不运行“成功命令”盖错。
 - **原生运行error但产物已完成，且错误文本指向异步媒体任务**：按主文件第5节确认是否父级直调异步生图使完成唤醒撞上活跃回合；按第7节把原生运行失败与已验证的内容/构建/Git/HTTP结果分开记录，不重做已完成工作。
-- **`timed out`且实耗≈配置timeout**：是预算到顶的墙钟截断，不是模型或工具卡死；按 config-audit 第4节用同类成功任务的实耗核对预算并记录样本，只报告结论，不重跑历史运行、不改模型或Prompt。
+- **失败告警**：汇报前先确认这次失败是否仍然成立、属于谁。① 读 `openclaw automations runs <id> --json`（或 `openclaw cron runs <id>`）看本轮全部尝试——顶层 `lastRunStatus`/`lastErrorReason` 只反映最近一次；实测 2026-09-23 同一次触发留下失败→失败→成功三条记录、业务产物已发布，而顶层当时只报最后的失败。有更新的 `completionStatus: succeeded` 就按成功汇报，不把中间失败报成最终失败。② 横向比对同 Agent 同类任务的模型字段与 `consecutiveErrors`：多份共用同一模型同时报错按 provider 侧暂态核实，不逐份当成独立故障；只有个别任务失败才按该任务自身边界归因。
+- **错误文本含 `timed out`/`timeout`**：先按实耗分两支，别把上游读超时当成预算到顶。`state.lastDurationMs`≈`payload.timeoutSeconds`×1000 才是墙钟截断——按 config-audit 第4节用同类成功任务的实耗核对预算并记录样本，只报告结论，不重跑历史运行、不改模型或Prompt。实耗远低于预算而错误文本或 `lastErrorReason` 仍写 `timeout` 时，读 `state.lastDiagnostics`：出现 `provider internal error`/`HTTP 504`/`Upstream read timeout` 一类即为上游模型暂态，不据此改 timeout 或 Prompt。
 - **Git不确定或检查中有并发变化**：按helper契约验证live remote及前后快照。停止冲突操作，不强推、reset、stash或改历史；稳定后只复验未验证边界，不重复已同步提交。
 - **HTTP暂不可用**：按业务有界重试，公网安全检查不可关闭。必要HTTP边界未过记BLOCKED并保留Git PASS，不再次发布；非必要项才可WARNING/N/A。
 - **宿主重启/进程突停**：沿用原run，重验文件版本与已触及的外部边界，从第一处未验证阶段继续。不能声称此文件会自动触发恢复。

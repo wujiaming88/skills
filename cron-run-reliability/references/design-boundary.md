@@ -14,6 +14,7 @@
 | 研究逐主张证据与准出 | [industry-research-evidence](../../industry-research-evidence/SKILL.md)；主题Prompt保留范围与深度目标 |
 | 主题Prompt的定位、覆盖范围与产出字段变更 | [weekly-report-rule-change](../../weekly-report-rule-change/SKILL.md)；只增强不新增任务，研究范围与深度目标仍归主题Prompt |
 | 文章语义保真 | weekly-publication第4节引用的report2article及既有交接协议 |
+| 普通文章（非周报）的配图同批提交、CI前置校验、推送与线上/客户端渲染/窄屏核验、双仓归档 | [blog-article-publish](../../blog-article-publish/SKILL.md)；周报仍走 weekly-publication，不在两处互抄 |
 
 不在本索引再抄写执行规则。脚本、测试路径及生产断言保护等维护要求已归入helper-contract的“回归测试同步”；文档整理不代表生产实跑通过。
 

@@ -8,6 +8,14 @@
 
 同类任务做字段对比，明确哪些差异是主题预算等有意差异，哪些是遗留不一致。调度器`ok/error/delivered`与业务SUCCESS/BLOCKED分开；需要评价最近业务结果时读取对应run摘要，不从顶层状态猜。
 
+取数入口（本机实测，别再逐个试）：
+
+- 调度配置与原生状态：`openclaw automations list --json`、`openclaw automations get <id>`；顶层 `lastRunStatus/lastDelivered` 只代表调度器。
+- 最近业务结果与投递（权威入口）：`openclaw automations runs <id> --limit <n> --json` → `entries[]` 的 `status`、`completionStatus`、`durationMs`、`error`、`delivered`、`deliveryStatus`、`summary`（`summary` 就是该次 final 正文）。
+- 运行身份：`openclaw audit --kind agent_run --after <ISO> --json`（含 sessionKey/sessionId/runId/status）。
+- 状态库直读：**首选 Python 的 `sqlite3` 模块直连 live 库**——`sqlite3.connect('file:<绝对路径>?mode=ro', uri=True)`，实测可直读 `<state-dir>/openclaw.sqlite`（`cron_jobs`）与 `<state-dir>/lcm.db`（`messages`），无需复制大库，且能看到还在 WAL 里的刚写入事务。该拒绝只针对外部 `sqlite3` CLI（报 `external sqlite3 cannot open databases under the active OpenClaw state directory`），模块不受限。确要用 CLI：先 `cp` 到 state 目录外（state 目录路径、其相对路径乃至同名副本都可能命中；要看最新事务就连 `-wal`/`-shm` 一起复制），**复制与查询分两条命令**——实测把 `cp`/`mv` 一个 sqlite 文件与 `sqlite3` 调用写进同一条命令时整条被拒。
+- 常见死路，不要再试：`openclaw message read` 在 Telegram 返回 `Unsupported Telegram action: read`；对本会话树以外的 session 调 `sessions_history` 会被当时的可见性/跨 Agent 配置拒绝（本机曾为 `tree`+关闭；配置本身见 [openclaw-session-access](../../openclaw-session-access/SKILL.md)，改它属独立授权、不在本审计内）；用 `find` 全量扫 state 目录代价极高。三者都不能当成"查不到证据"的结论。
+
 完成标准：目标任务无遗漏，当前配置、原生运行状态和业务结果没有混称。
 
 ## 2. 递归验证 REF 与固定依赖
@@ -32,7 +40,7 @@
 
 ## 4. 检查时间、投递与最近失败
 
-核对时区、同一Agent任务间隔与最大timeout，标出无缓冲相接或可能重叠的长任务；不凭一次较短耗时断言以后不会重叠。确认announce目标、channel/account解析及失败告警；多账号环境不能只凭数字目标猜账号。
+核对时区、同一Agent任务间隔与最大timeout，标出无缓冲相接或可能重叠的长任务；不凭一次较短耗时断言以后不会重叠。确认announce目标、channel/account解析及失败告警；多账号环境不能只凭数字目标猜账号。**审计里的 `Delivery` 是写入时刻的快照**：isolated Cron 的 final 由 runner 的 announce 在该运行结束前后投递，父级写审计时只能填 PENDING。复核真实投递状态用 `openclaw automations runs <id> --json` 的 `delivered`/`deliveryStatus`，不因审计文件仍为 PENDING 判定投递失败，也不要求父级在结束后回填。**改触发周几会连带改变报道窗口**：这类周报的主题Prompt多以触发日为窗口基准（如周五触发即"上周五→本周四"），只改小时不影响窗口，改周几必须同步复核并修正该Prompt的时间窗段，否则会静默研究错误区间。改日程前先读该主题Prompt的时间窗段，改后按第2节沿引用链复验。
 
 同类长任务的`timeout`要横向比，并把**墙钟截断**与真实故障分开：报`timed out (last phase: …)`且`state.lastDurationMs`≈`payload.timeoutSeconds`×1000时，是预算到顶被调度器截断——错误里的phase只是被杀时的位置，不代表模型或工具卡死。用同类任务**已成功**运行的实耗给预算定尺寸（同Agent、同流程的长任务互为可比样本），记录样本区间与依据；实耗明显低于timeout却仍error的按下一段其余边界归因，不并入本条。预算是否够属配置问题，只报告结论与样本，未获授权不改任务、不重跑历史运行。本机2026-09-20观测：同流程成功任务实耗12,481—12,638秒，而报截断的任务预算7,200秒。
 
@@ -43,6 +51,8 @@
 ## 5. 获得修改授权后的最小修复与复检
 
 只修已确认的断点：更新所有权威引用源，不用额外副本掩盖错误路径；按执行合同最小增删工具；保留主题有意的调度和预算差异。配置编辑前重新读取当前任务，避免覆盖并发修改；不整份替换配置。
+
+**增删工具用 `openclaw automations edit <id> --tools "<逗号分隔清单>"`，它把 `toolsAllow` 整表替换成传入的那一串，不是增量。** 删 N 个失效工具时先 `openclaw automations get <id> --json` 取现状，构造“原清单 − 失效项”的完整字符串再提交；只把要删的名字传进去，会把白名单削成那几项（本机 7 个周报各 23 项，误传 3 个 lcm 工具名等于把任务砍到 3 个工具）。`edit` 的返回体就是改动后的任务 JSON，可直接读回项数核对；批量改逐个核对，不一次遍历改完再统一验收。实测 7 个任务 23→20 项，缺省 `--tools` 之外的参数不动，逐字段比对后除 `payload.toolsAllow` 仅 `configRevision`/`updatedAtMs` 变化；要整块去掉白名单改用无参数列表的 `--clear-tools`（改为“使用全部工具”），不当成删除一个个工具用。
 
 修改后重新取得调度器配置，重复第1—4步；运行配置校验并确认Gateway状态。检查配置diff只含授权范围，所有固定REF链可读，硬禁用工具确已缺席，delivery/failureAlert仍解析到预期目标。使用`openclaw cron edit --tools`后必须重读`scheduledToolPolicy`：当前CLI可能把原先未显式记录的策略实体化为`trusted`等显式值；这是需要验收和报告的权限状态变化，不能只比较`toolsAllow`或宣称策略未变。改任务模型用 `openclaw cron edit <id> --model <provider/model>`（字段为 `payload.model`）。写前先快照目标任务 JSON；写后做**逐字段递归比对**而不是只看模型值，比对时排除会被运行时刷新的 `state`，其余任何非目标字段变化都要复读并报告。多个同类任务批量改时逐个核对，不用一次遍历改完再统一验收。除非用户明确要求，不为验证配置而手动运行全部长周报；下一次自然实跑前只报告静态预检通过。
 
