@@ -14,7 +14,9 @@
 python3 /root/.openclaw/skills/web-search-plus/scripts/search.py -p serper -q '<本期公开查询>' --max-results 5 --no-cache
 ```
 
-provider按主题允许入口选择实际支持的tavily或exa；参数分别引用，不以字符串拼接Shell。只读指不作对外业务写入，可保留工具已有本地缓存或本run证据，不输出密钥或提交私密查询。
+**默认搜索用 serper**：`-p serper` 为所有周报主题的默认搜索入口，不得省略——省略会走 `web-search-plus` 的自动路由，把查询分流到 tavily/exa/you。仅当主题明确要求其他提供商（如研究型主题指定 Tavily/Exa）时才改用该提供商，默认值仍是 serper。参数分别引用，不以字符串拼接Shell。只读指不作对外业务写入，可保留工具已有本地缓存或本run证据，不输出密钥或提交私密查询。
+
+> 实测：`auto_routing.enabled` 配置项在当前脚本中未被读取，不带 `-p` 必定自动路由；因此“默认 serper”只能靠每次显式传 `-p serper` 保证。
 
 固定脚本的限制：429/503已有内部有界重试，但当前未读取Retry-After；缓存键未包含全部raw_content/depth/域过滤参数。正文、深度或域过滤查询使用`--no-cache`，不把外层退避规则称为已修复内部实现；返回限流后不在外层追加重试，保留错误并转已授权备用或记缺口。401/403/审批拒绝不修凭据、不绕过。一次性测试包装不属于周报固定入口，不在Cron中复制或发明包装。
 

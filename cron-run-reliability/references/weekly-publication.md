@@ -45,6 +45,7 @@ article.done及生产者final交接遵守主文件第2—3节。资料库保留�
 8. 两仓分别运行 `python3 <本技能绝对目录>/scripts/reliable_cron.py check-git --repo <仓库绝对路径> --remote origin --branch main --verify-remote`。按helper真实接口确认预期分支、干净工作区、真实远端HEAD一致及无观测到的并发变化；两个只读仓库验证互不依赖时可同轮并行。不是只看push或缓存origin/main。
 9. 正文与头图分别运行 `python3 <本技能绝对目录>/scripts/reliable_cron.py check-http --url <公开URL> --attempts 12 --interval 20 --request-timeout 20 --total-timeout 300`。helper接受2xx，但周报必须核对实际200及当前版本正文标题/关键内容和头图bytes。两个只读HTTP验证互不依赖时可同轮并行。图片可下载后cmp；HTML不与Markdown逐字节比较。可用web_fetch或无凭据公共curl只读检查，不造临时脚本、不绕过helper网络安全限制。耗尽后不重复push。
    - 需要整页比对时，直接运行 `diff -u <本次已验收构建HTML> <下载的线上HTML>` 并读完全部差异，不先cmp再重复定位。diff exit1表示文件不同，不等于发布失败。仅当全部差异都是已确认的样式URL构建缓存时间戳、其余HTML无差异且上述正文/头图当前版本要求已通过时，记录为部署元数据差异，不因此改源、重建或重复push；不声称HTML字节完全相同，不批量过滤数字或查询参数以凑一致。其他差异逐项核对影响，无法确认当前版本则保留未验证状态。
+   - **线上核验件命名与留档（唯一口径）**：整页比对所需的线上副本固定放在运行目录：线上正文 `online-article.html`、线上头图 `online-image.png`（不再按各期封面/头图名另起 `online-cover.png`/`online-header.png` 等别名），整页差异存为同目录 `html-diff.txt`。三件只在本次确实下载或比对时产生，属可选核验证据，**不进入运行合同或主题 Prompt 的必交产物清单**，文件检查也不得把它们当期望文件——跨期运行目录的文件集合本就不同，不得以上一期的目录清单核对本期。
 10. 汇总内容准出、文章、构建、双仓Git、正文/头图和投递证据，按主文件第7节、下节及主题Prompt形成真实结论。核心证据齐全立即结束，不追加gh run list、Actions/Pages API、历史会话、重复构建或非关键清理；部署诊断交另一项明确任务。
 
 ## 7. 周报终态与announce交付
