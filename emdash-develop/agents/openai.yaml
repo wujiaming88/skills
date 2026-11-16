@@ -1,0 +1,4 @@
+interface:
+  display_name: "Emdash Develop"
+  short_description: "沿用 Emdash 桌面源码架构、UI 与交互约定进行开发、测试、Review 和打包"
+  default_prompt: "使用 $emdash-develop，按当前 Emdash 源码分支的架构、样式与交互约定完成定制开发，并验证改动。"

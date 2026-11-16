@@ -2,13 +2,13 @@
 
 面向 AI Agent 的技能集合：把开发、研究、写作、设计和运维中的可复用方法，整理成可读取的操作流程、参考资料与配套脚本。
 
-当前收录 **24 个 Skill，分为 6 类**。每个 Skill 保持独立的顶层目录；本页按主要用途分类，不改变安装路径。点击名称可查看对应的 `SKILL.md`。
+当前收录 **25 个 Skill，分为 6 类**。每个 Skill 保持独立的顶层目录；本页按主要用途分类，不改变安装路径。点击名称可查看对应的 `SKILL.md`。
 
 ## 分类导航
 
 | 分类 | 数量 | 适用任务 |
 | --- | ---: | --- |
-| [开发与界面设计](#development) | 6 | 编码规范、工程质量、变更验证、端到端测试、发布日志、前端需求落地 |
+| [开发与界面设计](#development) | 7 | 编码规范、工程质量、变更验证、端到端测试、发布日志、前端需求落地、Emdash 源码定制 |
 | [内容与演示](#content) | 5 | 报告转文章、模板风格 PPT 与视觉优化、小红书文案与封面 |
 | [图像、视频与可视化](#visuals) | 7 | 模型生图、图片编辑、视频生成与编辑、架构图、网页高清截图 |
 | [研究与投资分析](#research) | 1 | 宏观、行业、公司、政策与投资风险研究 |
@@ -29,6 +29,7 @@
 | [e2e-testing-patterns](./e2e-testing-patterns/SKILL.md) | 用 Playwright/Cypress 搭建可靠的端到端测试：页面对象、夹具、等待策略、网络拦截、视觉回归、分片与可访问性验证。 | 面向关键用户流程的自动化测试；需要 Node.js 与浏览器依赖，不替代单元测试和人工探索。 |
 | [changelog-automation](./changelog-automation/SKILL.md) | 按 Keep a Changelog 与 Conventional Commits 生成变更日志和发布说明，覆盖 semantic-release、git-cliff、commitizen 等工作流。 | 用于仓库发布流程标准化；需要团队先统一提交规范，发布前仍需人工确认内容。 |
 | [translate-ui-intent](./translate-ui-intent/SKILL.md) | 把“简洁、紧凑、高级感”等模糊意图转成可实现的界面决策，并做视觉验证。 | 已有产品优先沿用设计系统；可交付设计契约，也可用于界面实现。 |
+| [emdash-develop](./emdash-develop/SKILL.md) | 沿用 Emdash 桌面应用的架构、设计系统和交互约定，进行源码定制、测试、Review 与打包。 | 面向 generalaction/emdash 及其 fork；先核对目标分支，不适用于同名 EmDash CMS。 |
 
 <a id="content"></a>
 
